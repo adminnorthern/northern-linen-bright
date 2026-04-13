@@ -33,33 +33,42 @@ const steps = [
 
 function HowItWorksPage() {
   return (
-    <section className="px-6 py-20 md:py-28">
-      <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-          How It Works
-        </h1>
-        <p className="mt-4 text-lg text-steel">
-          Three simple steps to fresh laundry
-        </p>
-      </div>
+    <>
+      {/* Hero — white */}
+      <section className="px-6 py-20 md:py-28">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
+            How It Works
+          </h1>
+          <p className="mt-4 text-lg text-foreground/60">
+            Three simple steps to fresh laundry
+          </p>
+        </div>
 
-      <div className="mx-auto mt-16 max-w-2xl space-y-12">
-        {steps.map((step) => (
-          <div key={step.number} className="flex gap-6">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
-              {step.number}
+        <div className="mx-auto mt-16 max-w-2xl space-y-12">
+          {steps.map((step) => (
+            <div key={step.number} className="flex gap-6">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+                {step.number}
+              </div>
+              <div className="pt-2">
+                <h3 className="text-xl font-semibold">{step.title}</h3>
+                <p className="mt-2 text-foreground/60 leading-relaxed">{step.description}</p>
+              </div>
             </div>
-            <div className="pt-2">
-              <h3 className="text-xl font-semibold">{step.title}</h3>
-              <p className="mt-2 text-steel leading-relaxed">{step.description}</p>
-            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA — soft blue gray bg */}
+      <section className="bg-muted px-6 py-16">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Ready to get started?</h2>
+          <div className="mt-8">
+            <BookNowButton className="h-12 px-10 text-base" />
           </div>
-        ))}
-      </div>
-
-      <div className="mt-16 text-center">
-        <BookNowButton className="h-12 px-10 text-base" />
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 }

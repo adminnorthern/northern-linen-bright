@@ -27,52 +27,57 @@ const rates = [
 
 function PricingPage() {
   return (
-    <section className="px-6 py-20 md:py-28">
-      <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-          Simple, Transparent Pricing
-        </h1>
-        <p className="mt-4 text-lg text-steel">
-          No hidden fees — just clean laundry
-        </p>
-      </div>
+    <>
+      {/* Header — white */}
+      <section className="px-6 py-20 md:py-28">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
+            Simple, Transparent Pricing
+          </h1>
+          <p className="mt-4 text-lg text-foreground/60">
+            No hidden fees — just clean laundry
+          </p>
+        </div>
 
-      {/* Size cards */}
-      <div className="mx-auto mt-16 grid max-w-4xl gap-6 md:grid-cols-3">
-        {sizes.map((size) => (
-          <div
-            key={size.name}
-            className={`rounded-xl border p-8 text-center transition-shadow hover:shadow-md ${
-              size.highlight
-                ? "border-primary bg-primary/5 shadow-md"
-                : "border-soft/40 bg-card shadow-sm"
-            }`}
-          >
-            <h3 className="text-2xl font-bold">{size.name}</h3>
-            <p className="mt-2 text-steel">{size.weight}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Rates */}
-      <div className="mx-auto mt-14 max-w-md">
-        <div className="divide-y divide-soft/40 rounded-xl border border-soft/40 bg-card">
-          {rates.map((rate) => (
-            <div key={rate.service} className="flex items-center justify-between px-6 py-5">
-              <span className="font-medium">{rate.service}</span>
-              <span className="text-lg font-semibold text-primary">{rate.price}</span>
+        {/* Size cards */}
+        <div className="mx-auto mt-16 grid max-w-4xl gap-6 md:grid-cols-3">
+          {sizes.map((size) => (
+            <div
+              key={size.name}
+              className={`rounded-xl border p-8 text-center transition-shadow hover:shadow-md ${
+                size.highlight
+                  ? "border-primary bg-primary/10 shadow-md"
+                  : "border-border bg-card shadow-sm"
+              }`}
+            >
+              <h3 className="text-2xl font-bold">{size.name}</h3>
+              <p className="mt-2 text-foreground/60">{size.weight}</p>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <p className="mx-auto mt-8 max-w-md text-center text-sm text-steel">
-        All orders have a 25 lb minimum charge.
-      </p>
+      {/* Rates — soft blue gray bg */}
+      <section className="bg-muted px-6 py-16">
+        <div className="mx-auto max-w-md">
+          <div className="divide-y divide-white/30 rounded-xl bg-card shadow-sm">
+            {rates.map((rate) => (
+              <div key={rate.service} className="flex items-center justify-between px-6 py-5">
+                <span className="font-medium">{rate.service}</span>
+                <span className="text-lg font-semibold text-primary">{rate.price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="mt-12 text-center">
-        <BookNowButton className="h-12 px-10 text-base" />
-      </div>
-    </section>
+        <p className="mx-auto mt-8 max-w-md text-center text-sm text-muted-foreground">
+          All orders have a 25 lb minimum charge.
+        </p>
+
+        <div className="mt-12 text-center">
+          <BookNowButton className="h-12 px-10 text-base" />
+        </div>
+      </section>
+    </>
   );
 }

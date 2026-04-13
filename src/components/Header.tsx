@@ -14,9 +14,9 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-soft/30 bg-background/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 bg-secondary text-secondary-foreground">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-xl font-semibold tracking-tight text-secondary">
+        <Link to="/" className="text-xl font-semibold tracking-tight text-white">
           Northern Linen
         </Link>
 
@@ -26,8 +26,8 @@ export function Header() {
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm font-medium text-steel transition-colors hover:text-primary"
-              activeProps={{ className: "text-sm font-medium text-primary" }}
+              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+              activeProps={{ className: "text-sm font-medium text-white" }}
               activeOptions={{ exact: true }}
             >
               {link.label}
@@ -38,7 +38,7 @@ export function Header() {
         {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-secondary md:hidden"
+          className="text-white md:hidden"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -47,14 +47,14 @@ export function Header() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="border-t border-soft/30 bg-background px-6 py-4 md:hidden">
+        <nav className="border-t border-white/10 bg-secondary px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-sm font-medium text-steel transition-colors hover:text-primary"
-                activeProps={{ className: "text-sm font-medium text-primary" }}
+                className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+                activeProps={{ className: "text-sm font-medium text-white" }}
                 activeOptions={{ exact: true }}
                 onClick={() => setMobileOpen(false)}
               >
