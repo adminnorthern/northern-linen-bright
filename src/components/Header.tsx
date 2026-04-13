@@ -21,7 +21,6 @@ export function Header() {
           <img src={logo} alt="Northern Linen logo" className="h-10 w-auto" />
           Northern Linen
         </Link>
-        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
