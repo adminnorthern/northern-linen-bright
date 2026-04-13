@@ -38,7 +38,7 @@ function HowItWorksPage() {
         <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
           How It Works
         </h1>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <p className="mt-4 text-lg text-steel">
           Three simple steps to fresh laundry
         </p>
       </div>
@@ -46,12 +46,12 @@ function HowItWorksPage() {
       <div className="mx-auto mt-16 max-w-2xl space-y-12">
         {steps.map((step) => (
           <div key={step.number} className="flex gap-6">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-steel text-lg font-bold text-steel-foreground">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
               {step.number}
             </div>
             <div className="pt-2">
               <h3 className="text-xl font-semibold">{step.title}</h3>
-              <p className="mt-2 text-muted-foreground leading-relaxed">{step.description}</p>
+              <p className="mt-2 text-steel leading-relaxed">{step.description}</p>
             </div>
           </div>
         ))}
