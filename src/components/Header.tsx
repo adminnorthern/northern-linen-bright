@@ -17,8 +17,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-soft/30 bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-xl font-semibold tracking-tight text-secondary">
+        <Link to="/" className="flex items-center gap-2 text-xl font-semibold tracking-tight text-secondary">
+          <img src={logo} alt="Northern Linen logo" className="h-10 w-auto" />
           Northern Linen
+        </Link>
         </Link>
 
         {/* Desktop nav */}
