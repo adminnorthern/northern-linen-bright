@@ -29,7 +29,7 @@ const contactItems = [
   {
     icon: MapPin,
     label: "Service Area",
-    value: "Bloomington, MN",
+    value: "Bloomington, MN — Richfield — Edina",
     href: undefined,
   },
   {
@@ -47,7 +47,7 @@ function ContactPage() {
         <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
           Get in Touch
         </h1>
-        <p className="mt-4 text-lg text-steel">
+        <p className="mt-4 text-lg text-muted-foreground">
           We'd love to hear from you
         </p>
       </div>
@@ -56,16 +56,16 @@ function ContactPage() {
         {contactItems.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl border border-soft/40 bg-card p-6 shadow-sm"
+            className="rounded-xl border border-soft bg-card p-6 shadow-sm"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <item.icon className="h-5 w-5 text-primary" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-steel/10">
+              <item.icon className="h-5 w-5 text-steel" />
             </div>
-            <p className="mt-4 text-sm font-medium text-steel">{item.label}</p>
+            <p className="mt-4 text-sm font-medium text-muted-foreground">{item.label}</p>
             {item.href ? (
               <a
                 href={item.href}
-                className="mt-1 block text-lg font-semibold text-secondary transition-colors hover:text-primary"
+                className="mt-1 block text-lg font-semibold transition-colors hover:text-steel"
               >
                 {item.value}
               </a>

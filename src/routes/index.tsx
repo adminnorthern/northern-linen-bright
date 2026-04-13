@@ -27,13 +27,13 @@ const features = [
 function HomePage() {
   return (
     <>
-      {/* Hero */}
-      <section className="px-6 py-24 md:py-36">
+      {/* Hero — navy background */}
+      <section className="bg-navy px-6 py-24 md:py-36">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+          <h1 className="text-4xl font-bold tracking-tight text-navy-foreground md:text-6xl">
             Get Your Time Back
           </h1>
-          <p className="mt-6 text-lg text-steel md:text-xl">
+          <p className="mt-6 text-lg text-soft md:text-xl">
             Premium laundry pickup and delivery in Bloomington, MN
           </p>
           <div className="mt-10">
@@ -43,18 +43,18 @@ function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="border-t border-soft/30 bg-muted/30 px-6 py-20">
+      <section className="px-6 py-20">
         <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="rounded-xl border border-soft/40 bg-card p-8 text-center shadow-sm transition-shadow hover:shadow-md"
+              className="rounded-xl border border-soft bg-card p-8 text-center shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <feature.icon className="h-7 w-7 text-primary" />
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-steel/10">
+                <feature.icon className="h-7 w-7 text-steel" />
               </div>
               <h3 className="mt-5 text-lg font-semibold">{feature.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-steel">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
             </div>
