@@ -13,7 +13,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-soft shadow-2xl" style={{ height: "72px" }}>
+    <header className="sticky top-0 z-50 bg-background border-b border-soft shadow-md opacity-100" style={{ height: "72px" }}>
       <div className="mx-auto h-full max-w-[1200px] px-6 flex items-center justify-between shadow-2xl">
         <Link to="/" className="text-xl font-bold tracking-tight text-secondary">
           Northern Linen

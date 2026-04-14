@@ -76,7 +76,7 @@ function HomePage() {
       <section className="bg-background px-6 py-20">
         <div className="mx-auto max-w-[1200px] text-center">
           <h2 className="text-3xl font-bold text-secondary md:text-4xl">Why Northern Linen</h2>
-          <p className="mt-2 text-xl font-semibold text-primary">
+          <p className="mt-2 text-xl font-semibold text-primary shadow-none">
             We handle the laundry. You get your time back.
           </p>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
