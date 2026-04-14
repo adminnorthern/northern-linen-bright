@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -13,74 +12,72 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
-const contactItems = [
-  {
-    icon: Phone,
-    label: "Phone",
-    value: "(000) 000-0000",
-    href: "tel:+10000000000",
-  },
-  {
-    icon: Mail,
-    label: "Email",
-    value: "ahmed@northernlinen.com",
-    href: "mailto:ahmed@northernlinen.com",
-  },
-  {
-    icon: MapPin,
-    label: "Service Area",
-    value: "Bloomington, MN",
-    href: undefined,
-  },
-  {
-    icon: Clock,
-    label: "Pickup Hours",
-    value: "7:00 AM – 9:00 AM, Monday – Saturday",
-    href: undefined,
-  },
+const buildings = [
+  "The Fenley", "Indigo", "Carbon31", "Aire MSP",
+  "Ardor on the Bluffs", "5 Apple Tree Condos", "Risor of Bloomington", "Reflections"
 ];
+
+function ContactRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <p className="text-[13px] font-semibold uppercase tracking-wider text-primary">{label}</p>
+      <div className="mt-1 text-[17px] font-medium text-secondary">{children}</div>
+    </div>
+  );
+}
 
 function ContactPage() {
   return (
-    <>
-      {/* Header — white */}
-      <section className="px-6 py-20 md:py-28">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-            Get in Touch
-          </h1>
-          <p className="mt-4 text-lg text-foreground/60">
-            We'd love to hear from you
-          </p>
-        </div>
-      </section>
+    <section className="bg-background px-6 py-20 md:py-20">
+      <div className="mx-auto max-w-[700px] text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-secondary md:text-4xl">
+          Contact Us
+        </h1>
+        <p className="mt-2 text-lg font-semibold text-primary">
+          We respond to all inquiries within 24 hours
+        </p>
+      </div>
 
-      {/* Contact cards — soft blue gray bg */}
-      <section className="bg-muted px-6 py-16">
-        <div className="mx-auto grid max-w-2xl gap-6 sm:grid-cols-2">
-          {contactItems.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl bg-card p-6 shadow-sm"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
-                <item.icon className="h-5 w-5 text-primary" />
-              </div>
-              <p className="mt-4 text-sm font-medium text-foreground/50">{item.label}</p>
-              {item.href ? (
-                <a
-                  href={item.href}
-                  className="mt-1 block text-lg font-semibold transition-colors hover:text-primary"
-                >
-                  {item.value}
-                </a>
-              ) : (
-                <p className="mt-1 text-lg font-semibold">{item.value}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+      <div className="mx-auto mt-16 max-w-[700px] rounded-xl border-[1.5px] border-soft bg-background p-12">
+        <ContactRow label="Email">
+          <a href="mailto:info@northernlinen.com" className="transition-colors hover:text-primary">
+            info@northernlinen.com
+          </a>
+        </ContactRow>
+
+        <ContactRow label="Phone">
+          Coming soon
+        </ContactRow>
+
+        <ContactRow label="Service Area">
+          South Loop Bloomington, MN
+        </ContactRow>
+
+        <ContactRow label="Buildings Served">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {buildings.map((b) => (
+              <span
+                key={b}
+                className="rounded-full border-[1.5px] border-soft bg-background px-4 py-1.5 text-sm font-medium text-secondary"
+              >
+                {b}
+              </span>
+            ))}
+          </div>
+        </ContactRow>
+
+        <ContactRow label="Pickup Hours">
+          Monday through Saturday, 7am to 9am
+        </ContactRow>
+
+        <ContactRow label="Delivery">
+          Next day after pickup
+        </ContactRow>
+
+        <ContactRow label="Delivery Fee">
+          Always free — zero delivery fees ever
+        </ContactRow>
+      </div>
+    </section>
   );
 }

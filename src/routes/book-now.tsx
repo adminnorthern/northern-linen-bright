@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/book-now")({
   head: () => ({
@@ -15,40 +15,24 @@ export const Route = createFileRoute("/book-now")({
 
 function BookNowPage() {
   return (
-    <>
-      {/* Hero — white */}
-      <section className="px-6 py-20 md:py-28">
-        <div className="mx-auto max-w-lg text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15">
-            <CalendarDays className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="mt-6 text-3xl font-bold tracking-tight md:text-5xl">
-            Book Your Pickup
-          </h1>
-          <p className="mt-4 text-lg text-foreground/60">
-            Online booking is coming soon. In the meantime, reach out to schedule your first pickup.
-          </p>
-        </div>
-      </section>
+    <section className="bg-background px-6 py-20 md:py-20">
+      <div className="mx-auto max-w-[600px] text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-secondary md:text-4xl">
+          Book Your Pickup
+        </h1>
+        <p className="mx-auto mt-4 max-w-[600px] text-lg font-semibold text-primary">
+          Our booking form is almost ready. In the meantime reach us directly at info@northernlinen.com
+        </p>
 
-      {/* Contact card — soft blue gray bg */}
-      <section className="bg-muted px-6 py-16">
-        <div className="mx-auto max-w-md rounded-xl bg-card p-8 text-center shadow-sm">
-          <p className="font-semibold text-lg">Contact us to book</p>
-          <div className="mt-4 space-y-2 text-foreground/60">
-            <p>
-              <a href="mailto:ahmed@northernlinen.com" className="text-primary hover:text-deep transition-colors hover:underline">
-                ahmed@northernlinen.com
-              </a>
-            </p>
-            <p>
-              <a href="tel:+10000000000" className="text-primary hover:text-deep transition-colors hover:underline">
-                (000) 000-0000
-              </a>
-            </p>
+        <div className="mx-auto mt-12 max-w-[600px] rounded-xl border-[1.5px] border-soft bg-background px-8 py-20">
+          <h2 className="text-[22px] font-semibold text-secondary">Booking Form Coming Soon</h2>
+          <div className="mt-6">
+            <Button asChild>
+              <Link to="/contact">Contact Us</Link>
+            </Button>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

@@ -1,23 +1,52 @@
+import { Link } from "@tanstack/react-router";
+
 export function Footer() {
   return (
-    <footer className="bg-secondary text-secondary-foreground">
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <p className="text-lg font-semibold tracking-tight text-white">
-            Northern Linen
-          </p>
-          <div className="flex flex-col items-center gap-1 text-sm text-white/70">
-            <a href="https://northernlinen.com" className="transition-colors hover:text-white">
-              northernlinen.com
-            </a>
-            <a href="mailto:ahmed@northernlinen.com" className="transition-colors hover:text-white">
-              ahmed@northernlinen.com
-            </a>
-            <a href="tel:+10000000000" className="transition-colors hover:text-white">
-              (000) 000-0000
-            </a>
+    <footer className="border-t border-soft bg-background">
+      <div className="mx-auto max-w-[1200px] px-6 pt-12 pb-8">
+        <div className="grid gap-12 md:grid-cols-3">
+          {/* Column 1 */}
+          <div className="text-center md:text-left">
+            <p className="text-xl font-bold text-secondary">Northern Linen</p>
+            <p className="mt-2 text-[15px] font-medium text-secondary">Get Your Time Back</p>
           </div>
-          <p className="mt-4 text-xs text-white/40">
+
+          {/* Column 2 */}
+          <div className="text-center md:text-left">
+            <p className="text-base font-semibold text-secondary">Quick Links</p>
+            <div className="mt-3 flex flex-col gap-1">
+              {[
+                { to: "/" as const, label: "Home" },
+                { to: "/how-it-works" as const, label: "How It Works" },
+                { to: "/pricing" as const, label: "Pricing" },
+                { to: "/book-now" as const, label: "Book Now" },
+                { to: "/contact" as const, label: "Contact" },
+              ].map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="text-sm text-secondary leading-8 transition-colors hover:text-primary"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 3 */}
+          <div className="text-center md:text-left">
+            <p className="text-base font-semibold text-secondary">Contact</p>
+            <div className="mt-3 flex flex-col gap-1 text-sm text-secondary leading-8">
+              <a href="https://northernlinen.com" className="transition-colors hover:text-primary">northernlinen.com</a>
+              <a href="mailto:info@northernlinen.com" className="transition-colors hover:text-primary">info@northernlinen.com</a>
+              <p>Phone: Coming soon</p>
+              <p>Service area: South Loop Bloomington, MN</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-soft pt-4 text-center">
+          <p className="text-[13px] text-secondary">
             © {new Date().getFullYear()} Northern Linen. All rights reserved.
           </p>
         </div>

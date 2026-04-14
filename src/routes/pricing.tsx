@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { BookNowButton } from "@/components/BookNowButton";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -14,68 +14,112 @@ export const Route = createFileRoute("/pricing")({
 });
 
 const sizes = [
-  { name: "Regular", weight: "Starting at 25 lbs", highlight: false },
-  { name: "Big", weight: "Starting at 40 lbs", highlight: true },
-  { name: "Jumbo", weight: "Starting at 60 lbs", highlight: false },
+  {
+    name: "Regular",
+    sub: "Starting at 25lbs",
+    desc: "Perfect for one person or a single week of laundry",
+  },
+  {
+    name: "Big",
+    sub: "Starting at 40lbs",
+    desc: "Great for couples or heavier laundry weeks",
+  },
+  {
+    name: "Jumbo",
+    sub: "Starting at 60lbs",
+    desc: "Large loads, families, and heavy laundry weeks",
+  },
 ];
 
-const rates = [
-  { service: "Wash & Fold", price: "$2.50/lb" },
-  { service: "Dry Cleaning", price: "$10/item" },
-  { service: "Comforters", price: "$40 flat" },
-];
+const scents = ["Classic", "Fresh", "Gentle"];
 
 function PricingPage() {
   return (
     <>
-      {/* Header — white */}
-      <section className="px-6 py-20 md:py-28">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-            Simple, Transparent Pricing
+      {/* Header */}
+      <section className="bg-background px-6 pt-20 pb-0 md:pt-20">
+        <div className="mx-auto max-w-[1100px] text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-secondary md:text-4xl">
+            Simple Pricing
           </h1>
-          <p className="mt-4 text-lg text-foreground/60">
-            No hidden fees — just clean laundry
+          <p className="mt-2 text-xl font-semibold text-primary">
+            No hidden fees. No surprises. Just clean laundry.
           </p>
         </div>
+      </section>
 
-        {/* Size cards */}
-        <div className="mx-auto mt-16 grid max-w-4xl gap-6 md:grid-cols-3">
+      {/* Size cards */}
+      <section className="bg-background px-6 py-16">
+        <div className="mx-auto grid max-w-[1100px] gap-6 md:grid-cols-3">
           {sizes.map((size) => (
             <div
               key={size.name}
-              className={`rounded-xl border p-8 text-center transition-shadow hover:shadow-md ${
-                size.highlight
-                  ? "border-primary bg-primary/10 shadow-md"
-                  : "border-border bg-card shadow-sm"
-              }`}
+              className="rounded-xl border-[1.5px] border-soft bg-background p-8 text-center"
             >
-              <h3 className="text-2xl font-bold">{size.name}</h3>
-              <p className="mt-2 text-foreground/60">{size.weight}</p>
+              <h3 className="text-[22px] font-bold text-secondary">{size.name}</h3>
+              <p className="mt-1 text-[15px] font-semibold text-primary">{size.sub}</p>
+              <p className="mt-3 text-[15px] leading-[1.7] text-secondary">{size.desc}</p>
+              <p className="mt-4 text-[28px] font-bold text-secondary">$2.50<span className="text-base font-medium">/lb</span></p>
+              <div className="mt-6">
+                <Button asChild className="w-full">
+                  <Link to="/book-now">Book Now</Link>
+                </Button>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Rates — soft blue gray bg */}
-      <section className="bg-muted px-6 py-16">
-        <div className="mx-auto max-w-md">
-          <div className="divide-y divide-white/30 rounded-xl bg-card shadow-sm">
-            {rates.map((rate) => (
-              <div key={rate.service} className="flex items-center justify-between px-6 py-5">
-                <span className="font-medium">{rate.service}</span>
-                <span className="text-lg font-semibold text-primary">{rate.price}</span>
-              </div>
-            ))}
+      <div className="mx-auto max-w-[1200px] border-t border-soft" />
+
+      {/* Additional services */}
+      <section className="bg-background px-6 py-16">
+        <div className="mx-auto max-w-[700px]">
+          <h2 className="text-center text-[28px] font-bold text-secondary">Additional Services</h2>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+            <div className="rounded-xl border-[1.5px] border-soft bg-background p-8 text-center">
+              <h3 className="text-xl font-bold text-secondary">Dry Cleaning</h3>
+              <p className="mt-3 text-[28px] font-bold text-secondary">$10.00<span className="text-base font-medium">/item</span></p>
+              <p className="mt-2 text-sm text-primary">All garments same flat price</p>
+            </div>
+            <div className="rounded-xl border-[1.5px] border-soft bg-background p-8 text-center">
+              <h3 className="text-xl font-bold text-secondary">Comforters</h3>
+              <p className="mt-3 text-[28px] font-bold text-secondary">$40.00<span className="text-base font-medium"> flat</span></p>
+              <p className="mt-2 text-sm text-primary">All sizes same flat price</p>
+            </div>
           </div>
         </div>
+      </section>
 
-        <p className="mx-auto mt-8 max-w-md text-center text-sm text-muted-foreground">
-          All orders have a 25 lb minimum charge.
-        </p>
+      {/* Minimum charge notice */}
+      <section className="bg-background px-6 pb-16">
+        <div className="mx-auto max-w-[700px] rounded-xl border-[1.5px] border-soft bg-background p-8 text-center">
+          <p className="text-[15px] leading-[1.7] text-secondary">
+            All orders have a 25lb minimum charge regardless of actual weight. Your selected size only determines the temporary hold placed on your card at booking. You are always charged for the actual weight of your laundry after pickup. The hold is released within 5 to 7 business days if unused.
+          </p>
+        </div>
+      </section>
 
-        <div className="mt-12 text-center">
-          <BookNowButton className="h-12 px-10 text-base" />
+      <div className="mx-auto max-w-[1200px] border-t border-soft" />
+
+      {/* Scent profiles */}
+      <section className="bg-background px-6 py-16">
+        <div className="mx-auto max-w-[700px] text-center">
+          <h2 className="text-[28px] font-bold text-secondary">Choose Your Scent</h2>
+          <p className="mt-2 text-lg font-semibold text-primary">
+            Select your preferred scent at booking — no extra charge
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            {scents.map((s) => (
+              <span
+                key={s}
+                className="rounded-full border-[1.5px] border-soft bg-background px-8 py-3 text-base font-medium text-secondary"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-primary">All scents included at no extra charge</p>
         </div>
       </section>
     </>

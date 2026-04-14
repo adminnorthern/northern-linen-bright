@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { BookNowButton } from "@/components/BookNowButton";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/how-it-works")({
   head: () => ({
@@ -15,57 +15,90 @@ export const Route = createFileRoute("/how-it-works")({
 
 const steps = [
   {
-    number: "01",
-    title: "Book Online in 60 Seconds",
-    description: "Choose your size and preferred pickup time. It's fast and simple.",
+    number: "1",
+    title: "Book your pickup online in 60 seconds",
+    description: "Choose your laundry size — Regular starting at 25lbs, Big starting at 40lbs, or Jumbo starting at 60lbs. Select your preferred pickup time between 7 and 9am, enter your delivery address, and add your payment details. A temporary hold is placed on your card based on your selected size. You are only ever charged for the actual weight of your laundry after pickup.",
   },
   {
-    number: "02",
-    title: "We Pick Up Your Laundry",
-    description: "Our team arrives between 7–9 AM to collect your items from your door.",
+    number: "2",
+    title: "We pick up at your door between 7 and 9am",
+    description: "Leave your Northern Linen laundry bag outside your door by 7am on your scheduled pickup day. Our team picks it up and takes it to our cleaning facility. You do not need to be home. You will receive an SMS confirmation the moment your order is picked up.",
   },
   {
-    number: "03",
-    title: "Clean & Delivered Next Day",
-    description: "Your laundry comes back clean, folded, and delivered right to your door.",
+    number: "3",
+    title: "Clean folded laundry delivered back to your door the next day",
+    description: "Your laundry is professionally washed, dried, and folded according to your scent preference. We deliver it back to your door the following day. You will receive an SMS when your order is on its way. Fresh. Clean. Done.",
+  },
+];
+
+const faqs = [
+  {
+    q: "What is the minimum order size?",
+    a: "All orders have a 25lb minimum charge regardless of actual weight. If your laundry weighs less than 25lbs you are still charged for 25lbs.",
+  },
+  {
+    q: "When do you pick up and deliver?",
+    a: "We pick up between 7 and 9am Monday through Saturday. Clean laundry is delivered back to your door the next day.",
+  },
+  {
+    q: "Is there a delivery fee?",
+    a: "Never. Pickup and delivery is always completely free. No hidden fees. No surprises.",
   },
 ];
 
 function HowItWorksPage() {
   return (
     <>
-      {/* Hero — white */}
-      <section className="px-6 py-20 md:py-28">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
+      {/* Header */}
+      <section className="bg-background px-6 pt-20 pb-0 md:pt-20">
+        <div className="mx-auto max-w-[800px] text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-secondary md:text-4xl">
             How It Works
           </h1>
-          <p className="mt-4 text-lg text-foreground/60">
-            Three simple steps to fresh laundry
+          <p className="mt-2 text-xl font-semibold text-primary">
+            Laundry pickup and delivery made completely effortless
           </p>
         </div>
+      </section>
 
-        <div className="mx-auto mt-16 max-w-2xl space-y-12">
+      {/* Steps */}
+      <section className="bg-background px-6 py-16">
+        <div className="mx-auto max-w-[800px] space-y-6">
           {steps.map((step) => (
-            <div key={step.number} className="flex gap-6">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+            <div
+              key={step.number}
+              className="flex gap-6 rounded-xl border-[1.5px] border-soft bg-background p-10"
+            >
+              <span className="text-[64px] font-bold leading-none text-primary" style={{ minWidth: "80px" }}>
                 {step.number}
-              </div>
-              <div className="pt-2">
-                <h3 className="text-xl font-semibold">{step.title}</h3>
-                <p className="mt-2 text-foreground/60 leading-relaxed">{step.description}</p>
+              </span>
+              <div>
+                <h3 className="text-[22px] font-semibold text-secondary">{step.title}</h3>
+                <p className="mt-3 text-base leading-[1.7] text-secondary">{step.description}</p>
               </div>
             </div>
           ))}
         </div>
+        <div className="mt-12 text-center">
+          <Button asChild size="lg">
+            <Link to="/book-now">Book Now</Link>
+          </Button>
+        </div>
       </section>
 
-      {/* CTA — soft blue gray bg */}
-      <section className="bg-muted px-6 py-16">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Ready to get started?</h2>
-          <div className="mt-8">
-            <BookNowButton className="h-12 px-10 text-base" />
+      <div className="mx-auto max-w-[1200px] border-t border-soft" />
+
+      {/* FAQ */}
+      <section className="bg-background px-6 py-20">
+        <div className="mx-auto max-w-[800px]">
+          <h2 className="text-center text-[30px] font-bold text-secondary">Frequently Asked Questions</h2>
+          <div className="mt-12 space-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.q} className="rounded-xl border-[1.5px] border-soft bg-background p-8">
+                <h3 className="text-[17px] font-semibold text-secondary">{faq.q}</h3>
+                <p className="mt-3 text-[15px] leading-[1.7] text-secondary">{faq.a}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
