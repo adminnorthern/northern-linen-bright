@@ -13,7 +13,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background text-base rounded-none opacity-100 shadow-sm" style={{ height: "72px" }}>
+    <header className="sticky top-0 z-50 bg-background rounded-none opacity-100 shadow-sm text-base" style={{ height: "72px" }}>
       <div className="mx-auto h-full max-w-[1200px] px-6 items-center justify-between shadow-none flex flex-row">
         <Link to="/" className="flex items-center">
           <img
