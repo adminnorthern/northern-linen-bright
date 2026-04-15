@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-3">
           {/* Column 1 */}
           <div className="text-center md:text-left">
-            <p className="text-xl font-bold text-secondary">Northern Linen</p>
+            <img src="/northern-linen-logo.png" alt="Northern Linen" className="h-16 w-auto object-contain mx-auto md:mx-0" />
             <p className="mt-2 text-[15px] font-medium text-secondary">Get Your Time Back</p>
           </div>
 
