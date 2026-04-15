@@ -13,8 +13,8 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-soft shadow-md opacity-100" style={{ height: "72px" }}>
-      <div className="mx-auto h-full max-w-[1200px] px-6 flex items-center justify-between shadow-2xl">
+    <header className="sticky top-0 z-50 bg-background border-b border-soft opacity-100 shadow-none" style={{ height: "72px" }}>
+      <div className="mx-auto h-full max-w-[1200px] px-6 flex items-center justify-between shadow-none">
         <Link to="/" className="flex items-center">
           <img
             src="/northern-linen-logo.png"
