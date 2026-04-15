@@ -19,7 +19,7 @@ export function Header() {
           <img
             src="/northern-linen-logo.png"
             alt="Northern Linen"
-            className="h-[72px] w-auto object-contain"
+            className="h-[68px] w-auto object-contain"
           />
         </Link>
 
