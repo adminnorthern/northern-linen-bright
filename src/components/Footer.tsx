@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-3">
           {/* Column 1 */}
           <div className="text-center md:text-left">
-            <img src="/northern-linen-logo.png" alt="Northern Linen" className="h-16 w-auto object-contain mx-auto md:mx-0" />
+            <img src="/northern-linen-logo.png" alt="Northern Linen" className="h-[80px] w-auto object-contain mx-auto md:mx-0" />
             <p className="mt-2 text-[15px] font-medium text-secondary">Get Your Time Back</p>
           </div>
 
@@ -35,12 +35,12 @@ export function Footer() {
 
           {/* Column 3 */}
           <div className="text-center md:text-left">
-            <p className="text-base font-semibold text-secondary">Contact</p>
-            <div className="mt-3 flex flex-col gap-1 text-sm text-secondary leading-8">
-              <a href="https://northernlinen.com" className="transition-colors hover:text-primary">northernlinen.com</a>
-              <a href="mailto:info@northernlinen.com" className="transition-colors hover:text-primary">info@northernlinen.com</a>
-              <p>Phone: Coming soon</p>
-              <p>Service area: South Loop Bloomington, MN</p>
+            <p className="text-[16px] font-semibold text-[#1B3A4B]">Contact</p>
+            <div className="mt-3 flex flex-col gap-1 text-[14px] text-[#1B3A4B] leading-8">
+              <p>info@northernlinen.com</p>
+              <p>Service area: South Loop Bloomington MN</p>
+              <p>Pickup hours: Monday through Saturday 7am to 9am</p>
+              <p>Delivery fee: Always free</p>
             </div>
           </div>
         </div>
