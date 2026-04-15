@@ -15,8 +15,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-soft shadow-md opacity-100" style={{ height: "72px" }}>
       <div className="mx-auto h-full max-w-[1200px] px-6 flex items-center justify-between shadow-2xl">
-        <Link to="/" className="text-xl font-bold tracking-tight text-secondary">
-          Northern Linen
+        <Link to="/" className="flex items-center">
+          <img
+            src="/northern-linen-logo.png"
+            alt="Northern Linen"
+            className="h-[48px] w-auto object-contain"
+          />
         </Link>
 
         {/* Desktop nav */}
