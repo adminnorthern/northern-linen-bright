@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
+  return new Stripe(key, { apiVersion: "2024-06-20" as Stripe.LatestApiVersion });
 }
 
 /**
@@ -43,6 +43,7 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
         currency: "usd",
         capture_method: "manual",
         automatic_payment_methods: { enabled: true },
+        request_overcapture: "if_available",
         receipt_email: data.email,
         description: `Northern Linen ${data.size_selected} pickup hold`,
         metadata: {
