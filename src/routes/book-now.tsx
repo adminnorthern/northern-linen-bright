@@ -1,8 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Info, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { loadStripe, type Stripe as StripeJs } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import {
+  createBookingPaymentIntent,
+  finalizeBooking,
+  getStripePublishableKey,
+} from "@/utils/stripe.functions";
 
 export const Route = createFileRoute("/book-now")({
   head: () => ({
@@ -52,7 +63,7 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-type Errors = Partial<Record<keyof FormData, string>>;
+type Errors = Partial<Record<keyof FormData, string>> & { card?: string; submit?: string };
 
 function generateConfirmation() {
   return `NL-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -65,7 +76,44 @@ function todayISO() {
 }
 
 function BookNowPage() {
+  const [stripePromise, setStripePromise] = useState<Promise<StripeJs | null> | null>(null);
+  const [keyError, setKeyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getStripePublishableKey().then(({ publishableKey }) => {
+      if (!publishableKey) {
+        setKeyError("Stripe is not configured. Please contact support.");
+        return;
+      }
+      setStripePromise(loadStripe(publishableKey));
+    });
+  }, []);
+
+  if (keyError) {
+    return (
+      <section className="bg-background px-4 py-20 text-center">
+        <p style={{ color: ERR }}>{keyError}</p>
+      </section>
+    );
+  }
+  if (!stripePromise) {
+    return (
+      <section className="bg-background px-4 py-20 text-center">
+        <Loader2 className="mx-auto animate-spin" color={STEEL} />
+      </section>
+    );
+  }
+  return (
+    <Elements stripe={stripePromise}>
+      <BookNowForm />
+    </Elements>
+  );
+}
+
+function BookNowForm() {
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
   const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -126,32 +174,87 @@ function BookNowPage() {
       return;
     }
 
-    setSubmitting(true);
-    const confirmation_number = generateConfirmation();
-    const { error } = await supabase.from("bookings").insert({
-      confirmation_number,
-      customer_name: data.customer_name.trim(),
-      email: data.email.trim(),
-      phone: data.phone.trim(),
-      street_address: data.street_address.trim(),
-      city: data.city.trim(),
-      state: data.state,
-      zip: data.zip.trim(),
-      size_selected: data.size_selected,
-      scent_profile: data.scent_profile,
-      dry_cleaning_items: data.dry_cleaning_items,
-      comforters: data.comforters,
-      pickup_date: data.pickup_date,
-      pickup_time: data.pickup_time,
-      order_status: "pending",
-    });
-    setSubmitting(false);
-
-    if (error) {
-      setErrors({ customer_name: "Something went wrong saving your booking. Please try again." });
+    if (!stripe || !elements) {
+      setErrors({ card: "Payment system not ready. Please wait a moment." });
       return;
     }
-    navigate({ to: "/booking-confirmed/$number", params: { number: confirmation_number } });
+    const card = elements.getElement(CardElement);
+    if (!card) {
+      setErrors({ card: "Card input not ready" });
+      return;
+    }
+
+    setSubmitting(true);
+
+    // 1. Create the manual-capture PaymentIntent server-side
+    const intentRes = await createBookingPaymentIntent({
+      data: {
+        amount_cents: Math.round(holdAmount * 100),
+        email: data.email.trim(),
+        customer_name: data.customer_name.trim(),
+        size_selected: data.size_selected,
+      },
+    });
+    if (intentRes.error || !intentRes.client_secret || !intentRes.payment_intent_id) {
+      setSubmitting(false);
+      setErrors({ card: intentRes.error || "Could not start payment" });
+      return;
+    }
+
+    // 2. Confirm the card on the client
+    const confirmed = await stripe.confirmCardPayment(intentRes.client_secret, {
+      payment_method: {
+        card,
+        billing_details: {
+          name: data.customer_name.trim(),
+          email: data.email.trim(),
+          phone: data.phone.trim(),
+          address: {
+            line1: data.street_address.trim(),
+            city: data.city.trim(),
+            state: data.state,
+            postal_code: data.zip.trim(),
+            country: "US",
+          },
+        },
+      },
+    });
+    if (confirmed.error) {
+      setSubmitting(false);
+      setErrors({ card: confirmed.error.message || "Card was declined" });
+      return;
+    }
+
+    // 3. Save the booking server-side (after re-verifying the hold)
+    const confirmation_number = generateConfirmation();
+    const finalize = await finalizeBooking({
+      data: {
+        payment_intent_id: intentRes.payment_intent_id,
+        hold_amount: holdAmount,
+        booking: {
+          confirmation_number,
+          customer_name: data.customer_name.trim(),
+          email: data.email.trim(),
+          phone: data.phone.trim(),
+          street_address: data.street_address.trim(),
+          city: data.city.trim(),
+          state: data.state,
+          zip: data.zip.trim(),
+          size_selected: data.size_selected,
+          scent_profile: data.scent_profile,
+          dry_cleaning_items: data.dry_cleaning_items,
+          comforters: data.comforters,
+          pickup_date: data.pickup_date,
+          pickup_time: data.pickup_time,
+        },
+      },
+    });
+    setSubmitting(false);
+    if (finalize.error || !finalize.confirmation_number) {
+      setErrors({ submit: finalize.error || "Could not save booking" });
+      return;
+    }
+    navigate({ to: "/booking-confirmed/$number", params: { number: finalize.confirmation_number } });
   }
 
   const inputBase: React.CSSProperties = {
@@ -439,18 +542,8 @@ function BookNowPage() {
             </div>
 
             <label style={labelStyle}>Card Details</label>
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: `1.5px solid ${SOFT}`,
-                borderRadius: 8,
-                padding: "14px 16px",
-                color: SOFT,
-                fontSize: 15,
-              }}
-            >
-              Secure card entry will be available shortly
-            </div>
+            <StripeCardField />
+            {errors.card && <ErrorText>{errors.card}</ErrorText>}
 
             {/* Order summary */}
             <div
@@ -478,6 +571,8 @@ function BookNowPage() {
               </p>
             </div>
           </div>
+
+          {errors.submit && <div style={{ marginBottom: 12 }}><ErrorText>{errors.submit}</ErrorText></div>}
 
           <button
             type="submit"
@@ -512,6 +607,37 @@ function BookNowPage() {
         </form>
       </div>
     </section>
+  );
+}
+
+function StripeCardField() {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div
+      style={{
+        background: "#FFFFFF",
+        border: `1.5px solid ${focused ? STEEL : SOFT}`,
+        borderRadius: 8,
+        padding: "14px 16px",
+        width: "100%",
+      }}
+    >
+      <CardElement
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        options={{
+          style: {
+            base: {
+              color: NAVY,
+              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+              fontSize: "16px",
+              "::placeholder": { color: SOFT },
+            },
+            invalid: { color: ERR },
+          },
+        }}
+      />
+    </div>
   );
 }
 
