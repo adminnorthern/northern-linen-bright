@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "/northern-linen-logo.png?url";
+
 
 export const Route = createFileRoute("/booking-confirmed/$number")({
   head: ({ params }) => ({
@@ -60,7 +60,7 @@ function ConfirmedPage() {
     <section className="bg-background px-4 py-12 md:py-20">
       <div className="mx-auto" style={{ maxWidth: 720 }}>
         <div className="text-center">
-          <img src={logo} alt="Northern Linen" style={{ height: 80, width: "auto", margin: "0 auto", objectFit: "contain" }} />
+          <img src="/northern-linen-logo.png" alt="Northern Linen" style={{ height: 80, width: "auto", margin: "0 auto", objectFit: "contain" }} />
           <h1 style={{ color: NAVY, fontSize: 32, fontWeight: 700, marginTop: 32 }}>Booking Confirmed</h1>
           <div style={{ color: STEEL, fontSize: 28, fontWeight: 700, marginTop: 8 }}>{number}</div>
           <p style={{ color: NAVY, fontSize: 16, lineHeight: 1.7, maxWidth: 500, margin: "16px auto 0" }}>
