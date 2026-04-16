@@ -42,7 +42,8 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
         amount: data.amount_cents,
         currency: "usd",
         capture_method: "manual",
-        request_overcapture: "if_available",
+        // request_overcapture is supported by Stripe API but not yet in the SDK types
+        ...({ request_overcapture: "if_available" } as Record<string, unknown>),
         automatic_payment_methods: { enabled: true },
         receipt_email: data.email,
         description: `Northern Linen ${data.size_selected} pickup hold`,
