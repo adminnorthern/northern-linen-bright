@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          actual_weight: number | null
+          auth_expiry_date: string | null
+          city: string
+          comforters: number
+          confirmation_number: string
+          created_at: string
+          customer_name: string
+          dry_cleaning_items: number
+          email: string
+          final_captured_amount: number | null
+          hold_amount: number | null
+          id: string
+          order_status: string
+          phone: string
+          pickup_date: string
+          pickup_time: string
+          scent_profile: string
+          size_selected: string
+          state: string
+          street_address: string
+          stripe_payment_intent_id: string | null
+          zip: string
+        }
+        Insert: {
+          actual_weight?: number | null
+          auth_expiry_date?: string | null
+          city: string
+          comforters?: number
+          confirmation_number: string
+          created_at?: string
+          customer_name: string
+          dry_cleaning_items?: number
+          email: string
+          final_captured_amount?: number | null
+          hold_amount?: number | null
+          id?: string
+          order_status?: string
+          phone: string
+          pickup_date: string
+          pickup_time: string
+          scent_profile: string
+          size_selected: string
+          state: string
+          street_address: string
+          stripe_payment_intent_id?: string | null
+          zip: string
+        }
+        Update: {
+          actual_weight?: number | null
+          auth_expiry_date?: string | null
+          city?: string
+          comforters?: number
+          confirmation_number?: string
+          created_at?: string
+          customer_name?: string
+          dry_cleaning_items?: number
+          email?: string
+          final_captured_amount?: number | null
+          hold_amount?: number | null
+          id?: string
+          order_status?: string
+          phone?: string
+          pickup_date?: string
+          pickup_time?: string
+          scent_profile?: string
+          size_selected?: string
+          state?: string
+          street_address?: string
+          stripe_payment_intent_id?: string | null
+          zip?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
