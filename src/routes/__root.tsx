@@ -35,8 +35,11 @@ export const Route = createRootRoute({
       { name: "description", content: "Premium laundry pickup and delivery service in Bloomington, MN. Get your time back with Northern Linen." },
       { name: "author", content: "Northern Linen" },
       { property: "og:title", content: "Northern Linen — Premium Laundry Pickup & Delivery" },
-      { property: "og:description", content: "Premium laundry pickup and delivery service in Bloomington, MN." },
+      { property: "og:description", content: "Premium laundry pickup and delivery service in Bloomington, MN. Get your time back with Northern Linen." },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "Northern Linen — Premium Laundry Pickup & Delivery" },
+      { name: "twitter:description", content: "Premium laundry pickup and delivery service in Bloomington, MN. Get your time back with Northern Linen." },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
