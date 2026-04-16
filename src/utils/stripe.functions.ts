@@ -50,7 +50,9 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
           size_selected: data.size_selected,
           source: "booking_form",
         },
-        request_overcapture: "if_available",
+        payment_method_options: {
+          card: { request_overcapture: "if_available" },
+        },
       } as Stripe.PaymentIntentCreateParams);
       if (!intent.client_secret) {
         return { error: "Stripe did not return a client secret", client_secret: null, payment_intent_id: null };
