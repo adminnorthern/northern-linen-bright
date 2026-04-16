@@ -59,7 +59,7 @@ function HomePage() {
         <div className="absolute inset-0 bg-secondary/65" aria-hidden="true" />
         <div className="relative mx-auto max-w-[800px] text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white md:text-[56px] md:leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.45)" }}>
-            Get Your Time Back
+            Drop the laundry and pick up where your day left off
           </h1>
           <p className="mx-auto mt-4 max-w-[600px] text-[22px] font-semibold text-white/95 md:text-[22px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
             Premium laundry pickup and delivery in South Loop Bloomington MN
