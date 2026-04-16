@@ -5,7 +5,7 @@ import { z } from "zod";
 import { loadStripe, type Stripe as StripeJs } from "@stripe/stripe-js";
 import {
   Elements,
-  CardElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -13,6 +13,7 @@ import {
   createBookingPaymentIntent,
   finalizeBooking,
   getStripePublishableKey,
+  updateBookingPaymentIntent,
 } from "@/utils/stripe.functions";
 
 export const Route = createFileRoute("/book-now")({
@@ -75,73 +76,185 @@ function todayISO() {
   return d.toISOString().split("T")[0];
 }
 
+const DEFAULT_DATA: FormData = {
+  customer_name: "",
+  email: "",
+  phone: "",
+  street_address: "",
+  city: "",
+  state: "MN",
+  zip: "",
+  size_selected: "Regular",
+  scent_profile: "Classic",
+  dry_cleaning_items: 0,
+  comforters: 0,
+  pickup_date: "",
+  pickup_time: "",
+};
+
 function BookNowPage() {
   const [stripePromise, setStripePromise] = useState<Promise<StripeJs | null> | null>(null);
-  const [keyError, setKeyError] = useState<string | null>(null);
+  const [intent, setIntent] = useState<{ clientSecret: string; paymentIntentId: string } | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
+  // Centralized form state lives here so the intent can be created with the
+  // initial estimated amount (Regular = $62.50) before mounting Elements.
+  const [data, setData] = useState<FormData>(DEFAULT_DATA);
+
+  const sizeMin = useMemo(() => SIZES.find((s) => s.value === data.size_selected)?.min ?? 25, [data.size_selected]);
+  const holdAmount = useMemo(() => {
+    return sizeMin * PRICE_PER_LB + data.dry_cleaning_items * DRY_CLEAN_PRICE + data.comforters * COMFORTER_PRICE;
+  }, [sizeMin, data.dry_cleaning_items, data.comforters]);
+  const amountCents = Math.round(holdAmount * 100);
+
+  // 1. Load Stripe.js with the publishable key
   useEffect(() => {
     getStripePublishableKey().then(({ publishableKey }) => {
       if (!publishableKey) {
-        setKeyError("Stripe is not configured. Please contact support.");
+        setSetupError("Stripe is not configured. Please contact support.");
         return;
       }
       setStripePromise(loadStripe(publishableKey));
     });
   }, []);
 
-  if (keyError) {
+  // 2. Create the initial PaymentIntent so PaymentElement can mount
+  useEffect(() => {
+    if (!stripePromise || intent) return;
+    let cancelled = false;
+    createBookingPaymentIntent({
+      data: {
+        amount_cents: amountCents,
+        email: "pending@northernlinen.com",
+        customer_name: "Pending",
+        size_selected: data.size_selected,
+      },
+    }).then((res) => {
+      if (cancelled) return;
+      if (res.error || !res.client_secret || !res.payment_intent_id) {
+        setSetupError(res.error || "Could not initialize payment");
+        return;
+      }
+      setIntent({ clientSecret: res.client_secret, paymentIntentId: res.payment_intent_id });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripePromise]);
+
+  // 3. Keep the PaymentIntent amount in sync with the user's selection (debounced)
+  useEffect(() => {
+    if (!intent) return;
+    const t = setTimeout(() => {
+      updateBookingPaymentIntent({
+        data: { payment_intent_id: intent.paymentIntentId, amount_cents: amountCents },
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [amountCents, intent]);
+
+  if (setupError) {
     return (
       <section className="bg-background px-4 py-20 text-center">
-        <p style={{ color: ERR }}>{keyError}</p>
+        <p style={{ color: ERR }}>{setupError}</p>
       </section>
     );
   }
-  if (!stripePromise) {
+  if (!stripePromise || !intent) {
     return (
       <section className="bg-background px-4 py-20 text-center">
         <Loader2 className="mx-auto animate-spin" color={STEEL} />
       </section>
     );
   }
+
   return (
-    <Elements stripe={stripePromise}>
-      <BookNowForm />
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret: intent.clientSecret,
+        appearance: {
+          theme: "stripe",
+          variables: {
+            colorPrimary: STEEL,
+            colorBackground: "#FFFFFF",
+            colorText: NAVY,
+            colorDanger: ERR,
+            fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+            fontSizeBase: "16px",
+            borderRadius: "8px",
+            spacingUnit: "4px",
+          },
+          rules: {
+            ".Input": {
+              border: `1.5px solid ${SOFT}`,
+              padding: "14px 16px",
+              boxShadow: "none",
+              color: NAVY,
+            },
+            ".Input:focus": {
+              border: `1.5px solid ${STEEL}`,
+              boxShadow: "none",
+              outline: "none",
+            },
+            ".Input--invalid": {
+              border: `1.5px solid ${ERR}`,
+            },
+            ".Label": {
+              color: NAVY,
+              fontWeight: "600",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            },
+            ".Tab": {
+              border: `1.5px solid ${SOFT}`,
+              boxShadow: "none",
+            },
+            ".Tab--selected": {
+              border: `2px solid ${STEEL}`,
+              boxShadow: "none",
+              color: NAVY,
+            },
+            ".TabIcon--selected": { fill: STEEL },
+            ".TabLabel--selected": { color: NAVY },
+          },
+        },
+      }}
+    >
+      <BookNowForm
+        data={data}
+        setData={setData}
+        holdAmount={holdAmount}
+        paymentIntentId={intent.paymentIntentId}
+      />
     </Elements>
   );
 }
 
-function BookNowForm() {
+function BookNowForm({
+  data,
+  setData,
+  holdAmount,
+  paymentIntentId,
+}: {
+  data: FormData;
+  setData: React.Dispatch<React.SetStateAction<FormData>>;
+  holdAmount: number;
+  paymentIntentId: string;
+}) {
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
   const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
-  const [data, setData] = useState<FormData>({
-    customer_name: "",
-    email: "",
-    phone: "",
-    street_address: "",
-    city: "",
-    state: "MN",
-    zip: "",
-    size_selected: "Regular" as const,
-    scent_profile: "Classic" as const,
-    dry_cleaning_items: 0,
-    comforters: 0,
-    pickup_date: "",
-    pickup_time: "",
-  });
 
   const set = <K extends keyof FormData>(k: K, v: FormData[K]) => {
     setData((d) => ({ ...d, [k]: v }));
     setErrors((e) => ({ ...e, [k]: undefined }));
   };
-
-  const sizeMin = useMemo(() => SIZES.find((s) => s.value === data.size_selected)?.min ?? 25, [data.size_selected]);
-  const holdAmount = useMemo(() => {
-    return sizeMin * PRICE_PER_LB + data.dry_cleaning_items * DRY_CLEAN_PRICE + data.comforters * COMFORTER_PRICE;
-  }, [sizeMin, data.dry_cleaning_items, data.comforters]);
 
   function validateExtra(d: FormData): Errors {
     const e: Errors = {};
@@ -173,63 +286,55 @@ function BookNowForm() {
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-
     if (!stripe || !elements) {
       setErrors({ card: "Payment system not ready. Please wait a moment." });
-      return;
-    }
-    const card = elements.getElement(CardElement);
-    if (!card) {
-      setErrors({ card: "Card input not ready" });
       return;
     }
 
     setSubmitting(true);
 
-    // 1. Create the manual-capture PaymentIntent server-side
-    const intentRes = await createBookingPaymentIntent({
-      data: {
-        amount_cents: Math.round(holdAmount * 100),
-        email: data.email.trim(),
-        customer_name: data.customer_name.trim(),
-        size_selected: data.size_selected,
-      },
+    // Make sure the PaymentIntent reflects the latest amount before confirming
+    const updateRes = await updateBookingPaymentIntent({
+      data: { payment_intent_id: paymentIntentId, amount_cents: Math.round(holdAmount * 100) },
     });
-    if (intentRes.error || !intentRes.client_secret || !intentRes.payment_intent_id) {
+    if (updateRes.error) {
       setSubmitting(false);
-      setErrors({ card: intentRes.error || "Could not start payment" });
+      setErrors({ card: updateRes.error });
       return;
     }
 
-    // 2. Confirm the card on the client
-    const confirmed = await stripe.confirmCardPayment(intentRes.client_secret, {
-      payment_method: {
-        card,
-        billing_details: {
-          name: data.customer_name.trim(),
-          email: data.email.trim(),
-          phone: data.phone.trim(),
-          address: {
-            line1: data.street_address.trim(),
-            city: data.city.trim(),
-            state: data.state,
-            postal_code: data.zip.trim(),
-            country: "US",
+    // Confirm the Payment Element (handles cards, Apple Pay, Google Pay automatically)
+    const confirmed = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        payment_method_data: {
+          billing_details: {
+            name: data.customer_name.trim(),
+            email: data.email.trim(),
+            phone: data.phone.trim(),
+            address: {
+              line1: data.street_address.trim(),
+              city: data.city.trim(),
+              state: data.state,
+              postal_code: data.zip.trim(),
+              country: "US",
+            },
           },
         },
       },
+      redirect: "if_required",
     });
     if (confirmed.error) {
       setSubmitting(false);
-      setErrors({ card: confirmed.error.message || "Card was declined" });
+      setErrors({ card: confirmed.error.message || "Payment was declined" });
       return;
     }
 
-    // 3. Save the booking server-side (after re-verifying the hold)
+    // Finalize: server re-verifies the hold and saves the booking
     const confirmation_number = generateConfirmation();
     const finalize = await finalizeBooking({
       data: {
-        payment_intent_id: intentRes.payment_intent_id,
+        payment_intent_id: paymentIntentId,
         hold_amount: holdAmount,
         booking: {
           confirmation_number,
@@ -541,8 +646,23 @@ function BookNowForm() {
               </p>
             </div>
 
-            <label style={labelStyle}>Card Details</label>
-            <StripeCardField />
+            <label style={labelStyle}>Payment Method</label>
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: `1.5px solid ${SOFT}`,
+                borderRadius: 8,
+                padding: "14px 16px",
+                width: "100%",
+              }}
+            >
+              <PaymentElement
+                options={{
+                  layout: "tabs",
+                  wallets: { applePay: "auto", googlePay: "auto" },
+                }}
+              />
+            </div>
             {errors.card && <ErrorText>{errors.card}</ErrorText>}
 
             {/* Order summary */}
@@ -607,37 +727,6 @@ function BookNowForm() {
         </form>
       </div>
     </section>
-  );
-}
-
-function StripeCardField() {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div
-      style={{
-        background: "#FFFFFF",
-        border: `1.5px solid ${focused ? STEEL : SOFT}`,
-        borderRadius: 8,
-        padding: "14px 16px",
-        width: "100%",
-      }}
-    >
-      <CardElement
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        options={{
-          style: {
-            base: {
-              color: NAVY,
-              fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-              fontSize: "16px",
-              "::placeholder": { color: SOFT },
-            },
-            invalid: { color: ERR },
-          },
-        }}
-      />
-    </div>
   );
 }
 

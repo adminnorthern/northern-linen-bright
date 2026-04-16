@@ -42,6 +42,9 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
         amount: data.amount_cents,
         currency: "usd",
         capture_method: "manual",
+        // request_overcapture is supported by Stripe API but not yet in the SDK types
+        ...({ request_overcapture: "if_available" } as Record<string, unknown>),
+        automatic_payment_methods: { enabled: true },
         receipt_email: data.email,
         description: `Northern Linen ${data.size_selected} pickup hold`,
         metadata: {
@@ -62,6 +65,30 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
       const msg = e instanceof Error ? e.message : "Unknown error creating payment hold";
       console.error("createBookingPaymentIntent failed:", msg);
       return { error: msg, client_secret: null, payment_intent_id: null };
+    }
+  });
+
+const updateIntentSchema = z.object({
+  payment_intent_id: z.string().min(1).max(200),
+  amount_cents: z.number().int().min(50).max(100_000),
+});
+
+/**
+ * Updates the hold amount on an existing PaymentIntent (e.g. user changed size or add-ons).
+ */
+export const updateBookingPaymentIntent = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => updateIntentSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const stripe = getStripe();
+      await stripe.paymentIntents.update(data.payment_intent_id, {
+        amount: data.amount_cents,
+      });
+      return { error: null as string | null };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error updating payment hold";
+      console.error("updateBookingPaymentIntent failed:", msg);
+      return { error: msg };
     }
   });
 
