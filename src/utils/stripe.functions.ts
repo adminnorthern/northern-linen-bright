@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" });
+  return new Stripe(key, { apiVersion: "2024-06-20" as never });
 }
 
 /**
@@ -50,7 +50,8 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
           size_selected: data.size_selected,
           source: "booking_form",
         },
-      });
+        request_overcapture: "if_available",
+      } as Stripe.PaymentIntentCreateParams);
       if (!intent.client_secret) {
         return { error: "Stripe did not return a client secret", client_secret: null, payment_intent_id: null };
       }
