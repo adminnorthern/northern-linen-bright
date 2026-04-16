@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Truck, Clock, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import heroImage from "@/assets/hero-delivery.jpg";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -51,8 +52,12 @@ function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-background px-6 py-20 md:py-28" style={{ minHeight: "480px" }}>
-        <div className="mx-auto max-w-[800px] text-center">
+      <section
+        className="relative bg-background bg-cover bg-center px-6 py-20 md:py-28"
+        style={{ minHeight: "480px", backgroundImage: `url(${heroImage})` }}
+      >
+        <div className="absolute inset-0 bg-background/70" aria-hidden="true" />
+        <div className="relative mx-auto max-w-[800px] text-center">
           <h1 className="text-4xl font-bold tracking-tight text-secondary md:text-[56px] md:leading-tight">
             Get Your Time Back
           </h1>
