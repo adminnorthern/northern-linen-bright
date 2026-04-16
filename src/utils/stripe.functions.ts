@@ -68,6 +68,30 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
     }
   });
 
+const updateIntentSchema = z.object({
+  payment_intent_id: z.string().min(1).max(200),
+  amount_cents: z.number().int().min(50).max(100_000),
+});
+
+/**
+ * Updates the hold amount on an existing PaymentIntent (e.g. user changed size or add-ons).
+ */
+export const updateBookingPaymentIntent = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => updateIntentSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const stripe = getStripe();
+      await stripe.paymentIntents.update(data.payment_intent_id, {
+        amount: data.amount_cents,
+      });
+      return { error: null as string | null };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error updating payment hold";
+      console.error("updateBookingPaymentIntent failed:", msg);
+      return { error: msg };
+    }
+  });
+
 const finalizeSchema = z.object({
   payment_intent_id: z.string().min(1).max(200),
   hold_amount: z.number().min(0),
