@@ -94,7 +94,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_booking_by_confirmation: {
+        Args: { _confirmation_number: string }
+        Returns: {
+          city: string
+          comforters: number
+          confirmation_number: string
+          created_at: string
+          customer_name: string
+          dry_cleaning_items: number
+          email: string
+          order_status: string
+          phone: string
+          pickup_date: string
+          pickup_time: string
+          scent_profile: string
+          size_selected: string
+          state: string
+          street_address: string
+          zip: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
