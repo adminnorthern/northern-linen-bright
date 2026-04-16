@@ -6,8 +6,8 @@ export function Footer() {
       <div className="mx-auto max-w-[1200px] px-6 pt-12 pb-8">
         <div className="grid gap-12 md:grid-cols-3">
           {/* Column 1 */}
-          <div className="text-center md:text-left">
-            <img src="/northern-linen-logo.png" alt="Northern Linen" className="h-[160px] w-auto object-contain mx-auto md:mx-0" />
+          <div className="text-center">
+            <img src="/northern-linen-logo.png" alt="Northern Linen" className="h-[160px] w-auto object-contain mx-auto" />
             <p className="mt-2 text-[15px] font-medium text-secondary">Get Your Time Back</p>
           </div>
 
