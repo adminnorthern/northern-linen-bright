@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Truck, Clock, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import heroImage from "@/assets/hero-delivery.jpg";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
