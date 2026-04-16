@@ -42,6 +42,8 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
         amount: data.amount_cents,
         currency: "usd",
         capture_method: "manual",
+        request_overcapture: "if_available",
+        automatic_payment_methods: { enabled: true },
         receipt_email: data.email,
         description: `Northern Linen ${data.size_selected} pickup hold`,
         metadata: {
