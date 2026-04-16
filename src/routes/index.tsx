@@ -56,12 +56,12 @@ function HomePage() {
         className="relative bg-background bg-cover bg-center px-6 py-20 md:py-28"
         style={{ minHeight: "480px", backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-white/55 md:bg-gradient-to-r md:from-white/80 md:via-white/60 md:to-white/30" aria-hidden="true" />
+        <div className="absolute inset-0 bg-secondary/65" aria-hidden="true" />
         <div className="relative mx-auto max-w-[800px] text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-secondary md:text-[56px] md:leading-tight" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}>
+          <h1 className="text-4xl font-bold tracking-tight text-white md:text-[56px] md:leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.45)" }}>
             Get Your Time Back
           </h1>
-          <p className="mx-auto mt-4 max-w-[600px] text-[22px] font-semibold text-primary md:text-[22px]" style={{ textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}>
+          <p className="mx-auto mt-4 max-w-[600px] text-[22px] font-semibold text-white/95 md:text-[22px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>
             Premium laundry pickup and delivery in South Loop Bloomington MN
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
