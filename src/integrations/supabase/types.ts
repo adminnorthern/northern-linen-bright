@@ -169,6 +169,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_owner_admin_role: { Args: never; Returns: boolean }
       get_booking_by_confirmation: {
         Args: { _confirmation_number: string }
         Returns: {
