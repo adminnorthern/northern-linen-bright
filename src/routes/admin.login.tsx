@@ -22,7 +22,7 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const mode: "signin" | "signup" = "signin";
 
   useEffect(() => {
     if (!auth.loading && auth.isAuthenticated && auth.isAdmin) {
@@ -73,7 +73,7 @@ function AdminLogin() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ minHeight: "100vh", background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: 420, background: "#FFFFFF", border: `1.5px solid ${SOFT}`, borderRadius: 12, padding: 40 }}>
         <h1 style={{ color: NAVY, fontSize: 26, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Northern Linen Admin</h1>
         <p style={{ color: STEEL, fontSize: 14, marginBottom: 28, textAlign: "center" }}>
@@ -149,17 +149,6 @@ function AdminLogin() {
           {loading && <Loader2 size={16} className="animate-spin" />}
           {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account & sign in"}
         </button>
-
-        <p style={{ marginTop: 16, fontSize: 13, color: STEEL, textAlign: "center" }}>
-          {mode === "signin" ? "First time setting up?" : "Already have an account?"}{" "}
-          <button
-            type="button"
-            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
-            style={{ background: "none", border: "none", color: NAVY, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
-          >
-            {mode === "signin" ? "Create the admin account" : "Sign in"}
-          </button>
-        </p>
 
         {error && <p style={{ color: ERR, fontSize: 13, marginTop: 16, textAlign: "center" }}>{error}</p>}
       </form>
