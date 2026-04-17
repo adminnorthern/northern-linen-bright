@@ -104,7 +104,7 @@ function AdminLogin() {
         <label style={{ display: "block", color: NAVY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
         <input
           type="password"
-          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -123,7 +123,7 @@ function AdminLogin() {
             marginBottom: 20,
             boxSizing: "border-box",
           }}
-          placeholder={mode === "signup" ? "At least 8 characters" : ""}
+          placeholder=""
         />
 
         <button
@@ -147,7 +147,7 @@ function AdminLogin() {
           }}
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account & sign in"}
+          {loading ? "Please wait…" : "Sign in"}
         </button>
 
         {error && <p style={{ color: ERR, fontSize: 13, marginTop: 16, textAlign: "center" }}>{error}</p>}
