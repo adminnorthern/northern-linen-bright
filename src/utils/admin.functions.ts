@@ -281,6 +281,7 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         return { error: msg };
       }
 
+      const capturedDollars = captureAmt / 100;
       const html = receiptHtml({
         name: booking.customer_name,
         confirmation: booking.confirmation_number,
@@ -291,7 +292,11 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         pricePerDry,
         comf: booking.comforters ?? 0,
         pricePerComf,
-        total: captureAmt / 100,
+        subtotal: finalTotal,
+        taxRate,
+        taxAmount,
+        city: booking.city ?? "",
+        total: capturedDollars,
       });
       const emailRes = await sendEmail(booking.email, `Your Northern Linen receipt — ${booking.confirmation_number}`, html);
 
@@ -299,13 +304,19 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         .from("bookings")
         .update({
           actual_weight: data.actual_weight,
-          final_captured_amount: captureAmt / 100,
+          final_captured_amount: capturedDollars,
           order_status: "delivered",
           receipt_email_status: emailRes.ok ? "sent" : `failed: ${emailRes.error}`.slice(0, 100),
         })
         .eq("id", data.booking_id);
 
-      return { error: null as string | null, captured: captureAmt / 100 };
+      return {
+        error: null as string | null,
+        captured: capturedDollars,
+        subtotal: finalTotal,
+        taxRate,
+        taxAmount,
+      };
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Failed" };
     }
