@@ -349,58 +349,97 @@ function receiptHtml(p: {
   taxRate: number;
   taxAmount: number;
   city: string;
+  pickupDate: string;
+  deliveryAddress: string;
+  scent: string;
+  size: string;
   total: number;
 }): string {
   const NAVY = "#1B3A4B";
   const STEEL = "#5B9DB5";
   const SOFT = "#8BBCCC";
-  const lines: string[] = [];
-  lines.push(
-    `<tr><td style="padding:8px 0;color:${STEEL}">Wash & Fold (${p.billableWeight} lb${p.weight !== p.billableWeight ? ` — actual ${p.weight} lb, billed at minimum` : ""})</td><td style="padding:8px 0;color:${NAVY};text-align:right">$${(p.billableWeight * p.pricePerLb).toFixed(2)}</td></tr>`
-  );
-  if (p.dry > 0) {
-    lines.push(
-      `<tr><td style="padding:8px 0;color:${STEEL}">Dry cleaning (${p.dry} × $${p.pricePerDry.toFixed(2)})</td><td style="padding:8px 0;color:${NAVY};text-align:right">$${(p.dry * p.pricePerDry).toFixed(2)}</td></tr>`
-    );
-  }
-  if (p.comf > 0) {
-    lines.push(
-      `<tr><td style="padding:8px 0;color:${STEEL}">Comforters (${p.comf} × $${p.pricePerComf.toFixed(2)})</td><td style="padding:8px 0;color:${NAVY};text-align:right">$${(p.comf * p.pricePerComf).toFixed(2)}</td></tr>`
-    );
-  }
+  const WHITE = "#FFFFFF";
 
-  const ratePct = (p.taxRate * 100).toFixed(p.taxRate * 100 % 1 === 0 ? 0 : 3).replace(/\.?0+$/, "");
-  const cityLabel = p.city ? `${p.city} ` : "";
+  const ratePct = (p.taxRate * 100).toFixed(2);
+  const washSubtotal = p.billableWeight * p.pricePerLb;
+  const drySubtotal = p.dry * p.pricePerDry;
+  const comfSubtotal = p.comf * p.pricePerComf;
 
-  return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;color:${NAVY}">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:40px 20px"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1.5px solid ${SOFT};border-radius:12px;padding:40px">
-  <tr><td>
-    <h1 style="color:${NAVY};margin:0 0 8px;font-size:24px">Thank you, ${p.name}!</h1>
-    <p style="color:${STEEL};margin:0 0 24px;font-size:14px">Your Northern Linen order is complete.</p>
-    <p style="color:${NAVY};margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px">Confirmation</p>
-    <p style="color:${STEEL};margin:0 0 24px;font-size:18px;font-weight:700">${p.confirmation}</p>
-    <hr style="border:0;border-top:1px solid ${SOFT};margin:0 0 16px">
-    <table width="100%" cellpadding="0" cellspacing="0">${lines.join("")}</table>
+  const detailRow = (label: string, value: string) =>
+    `<tr>
+      <td style="padding:8px 0;border-bottom:1px solid ${SOFT};color:${STEEL};font-size:13px;text-transform:uppercase;letter-spacing:0.5px">${label}</td>
+      <td style="padding:8px 0;border-bottom:1px solid ${SOFT};color:${NAVY};font-size:15px;text-align:right">${value}</td>
+    </tr>`;
+
+  const lineRow = (label: string, sub: string, amount: number) =>
+    `<tr>
+      <td style="padding:6px 0;color:${STEEL};font-size:13px;text-transform:uppercase;letter-spacing:0.5px">${label}</td>
+      <td style="padding:6px 0;color:${NAVY};font-size:14px">${sub}</td>
+      <td style="padding:6px 0;color:${NAVY};font-size:15px;text-align:right">$${amount.toFixed(2)}</td>
+    </tr>`;
+
+  return `<!doctype html><html><body style="margin:0;padding:0;background:${WHITE};font-family:Arial,sans-serif;color:${NAVY}">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:${WHITE}"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:${WHITE};padding:40px">
+  <tr><td align="center" style="padding-bottom:8px">
+    <div style="color:${NAVY};font-size:24px;font-weight:bold">Northern Linen</div>
+    <div style="color:${STEEL};font-size:14px;margin-bottom:24px">Drop the bag. Own the day.</div>
+    <hr style="border:0;border-top:1px solid ${SOFT};margin:0">
+  </td></tr>
+  <tr><td style="padding-top:32px">
+    <h1 style="color:${NAVY};font-size:20px;font-weight:bold;margin:0 0 8px">Hi ${p.name},</h1>
+    <p style="color:${NAVY};font-size:15px;line-height:1.7;margin:0 0 24px">Thank you for choosing Northern Linen. Your order is complete and your laundry is on its way.</p>
+
+    <h2 style="color:${NAVY};font-size:16px;font-weight:bold;margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid ${SOFT}">Order Details</h2>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${detailRow("CONFIRMATION", p.confirmation)}
+      ${detailRow("PICKUP DATE", p.pickupDate)}
+      ${detailRow("DELIVERY ADDRESS", p.deliveryAddress)}
+      ${detailRow("SERVICE SIZE", p.size)}
+      ${detailRow("SCENT", p.scent)}
+      ${detailRow("ACTUAL WEIGHT", `${p.weight} lbs`)}
+    </table>
+
+    <hr style="border:0;border-top:1px solid ${SOFT};margin:24px 0">
+
+    <h2 style="color:${NAVY};font-size:16px;font-weight:bold;margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid ${SOFT}">Receipt</h2>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${lineRow("WASH AND FOLD", `${p.billableWeight}lbs at $${p.pricePerLb.toFixed(2)} per lb`, washSubtotal)}
+      ${p.dry > 0 ? lineRow("DRY CLEANING", `${p.dry} items at $${p.pricePerDry.toFixed(2)} each`, drySubtotal) : ""}
+      ${p.comf > 0 ? lineRow("COMFORTERS", `${p.comf} at $${p.pricePerComf.toFixed(2)} each`, comfSubtotal) : ""}
+    </table>
+
     <hr style="border:0;border-top:1px solid ${SOFT};margin:16px 0">
+
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td style="padding:6px 0;color:${STEEL};font-weight:600">Subtotal</td>
-        <td style="padding:6px 0;color:${NAVY};font-weight:600;text-align:right">$${p.subtotal.toFixed(2)}</td>
+        <td style="padding:6px 0;color:${STEEL};font-size:13px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">SUBTOTAL</td>
+        <td style="padding:6px 0;color:${NAVY};font-size:15px;font-weight:600;text-align:right">$${p.subtotal.toFixed(2)}</td>
       </tr>
       <tr>
-        <td style="padding:6px 0;color:${STEEL}">Sales Tax (${cityLabel}${ratePct}%)</td>
-        <td style="padding:6px 0;color:${NAVY};text-align:right">$${p.taxAmount.toFixed(2)}</td>
+        <td style="padding:6px 0;color:${STEEL};font-size:13px;text-transform:uppercase;letter-spacing:0.5px">SALES TAX (${p.city} ${ratePct}%)</td>
+        <td style="padding:6px 0;color:${NAVY};font-size:15px;text-align:right">$${p.taxAmount.toFixed(2)}</td>
       </tr>
     </table>
-    <hr style="border:0;border-top:2px solid ${NAVY};margin:12px 0">
+
+    <hr style="border:0;border-top:2px solid ${NAVY};margin:16px 0">
+
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px">Total Charged</td>
-        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px;text-align:right">$${p.total.toFixed(2)}</td>
+        <td style="padding:4px 0;color:${NAVY};font-weight:bold;font-size:18px">TOTAL CHARGED</td>
+        <td style="padding:4px 0;color:${NAVY};font-weight:bold;font-size:20px;text-align:right">$${p.total.toFixed(2)}</td>
       </tr>
     </table>
-    <p style="color:${STEEL};margin:24px 0 0;font-size:13px">Questions? Reply to this email or contact us at info@northernlinen.com</p>
+
+    <hr style="border:0;border-top:1px solid ${SOFT};margin:32px 0 0">
+
+    <div style="text-align:center;padding-top:24px">
+      <div style="color:${NAVY};font-size:14px;margin-bottom:8px">We appreciate your business and look forward to serving you again.</div>
+      <div style="color:${NAVY};font-size:14px">northernlinen.com</div>
+      <div style="color:${NAVY};font-size:14px">info@northernlinen.com</div>
+      <div style="color:${STEEL};font-size:13px;margin-top:8px">South Loop Bloomington MN</div>
+      <div style="color:${SOFT};font-size:12px;margin-top:16px">© Northern Linen 2026</div>
+    </div>
   </td></tr>
 </table>
 </td></tr></table></body></html>`;
