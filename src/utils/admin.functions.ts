@@ -290,6 +290,7 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
       }
 
       const capturedDollars = captureAmt / 100;
+      const deliveryAddress = `${booking.street_address}, ${booking.city}, ${booking.state} ${booking.zip}`;
       const html = receiptHtml({
         name: booking.customer_name,
         confirmation: booking.confirmation_number,
@@ -304,6 +305,10 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         taxRate,
         taxAmount,
         city: booking.city ?? "",
+        pickupDate: booking.pickup_date,
+        deliveryAddress,
+        scent: booking.scent_profile,
+        size: booking.size_selected,
         total: capturedDollars,
       });
       const emailRes = await sendEmail(booking.email, `Your Northern Linen receipt — ${booking.confirmation_number}`, html);
@@ -312,7 +317,7 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         .from("bookings")
         .update({
           actual_weight: data.actual_weight,
-          final_captured_amount: capturedDollars,
+          final_captured_amount: finalTotalWithTax,
           order_status: "delivered",
           receipt_email_status: emailRes.ok ? "sent" : `failed: ${emailRes.error}`.slice(0, 100),
         })
