@@ -109,16 +109,18 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       .maybeSingle();
     if (be || !booking) return { error: "Booking not found" };
 
-    const update: Record<string, unknown> = { order_status: data.order_status };
-
+    let sms2: string | undefined;
     // Auto-send SMS #2 when marked out_for_delivery
     if (data.order_status === "out_for_delivery" && booking.sms_2_status !== "sent") {
       const msg = `Northern Linen: Your laundry is out for delivery and will arrive today. Thank you for choosing us!`;
       const sms = await sendSms(booking.phone, msg);
-      update.sms_2_status = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
+      sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
     }
 
-    const { error } = await supabaseAdmin.from("bookings").update(update).eq("id", data.booking_id);
+    const { error } = await supabaseAdmin
+      .from("bookings")
+      .update(sms2 !== undefined ? { order_status: data.order_status, sms_2_status: sms2 } : { order_status: data.order_status })
+      .eq("id", data.booking_id);
     if (error) return { error: error.message };
     return { error: null as string | null };
   });
