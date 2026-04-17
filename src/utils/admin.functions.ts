@@ -36,7 +36,7 @@ async function verifyAdmin(accessToken: string): Promise<string> {
 const tokenOnly = z.object({ access_token: z.string().min(10).max(4000) });
 
 // ---------------- TWILIO ----------------
-async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
+async function sendSmsOnce(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER;
@@ -58,6 +58,14 @@ async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?:
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "SMS failed" };
   }
+}
+
+// Send SMS with one automatic retry before giving up.
+async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
+  const first = await sendSmsOnce(to, body);
+  if (first.ok) return first;
+  const second = await sendSmsOnce(to, body);
+  return second;
 }
 
 // ---------------- RESEND ----------------
