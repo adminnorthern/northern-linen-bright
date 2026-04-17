@@ -4,6 +4,7 @@ import { captureBookingPayment, listBookings, listSettings } from "@/utils/admin
 import { withToken } from "@/lib/admin-api";
 import { Empty } from "./admin.index";
 import { Loader2 } from "lucide-react";
+import { taxRateForCity } from "@/lib/order-status";
 
 export const Route = createFileRoute("/admin/calculator")({
   component: CalculatorPage,
