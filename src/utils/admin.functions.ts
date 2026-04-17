@@ -121,8 +121,8 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       if (be || !booking) return { error: "Booking not found" };
 
       let sms2: string | undefined;
-      if (data.order_status === "out_for_delivery" && booking.sms_2_status !== "sent") {
-        const msg = `Northern Linen: Your laundry is out for delivery and will arrive today. Thank you for choosing us!`;
+      if (data.order_status === "delivered" && booking.sms_2_status !== "sent") {
+        const msg = `Northern Linen: Your laundry has been delivered and is at your door. Fresh clean and folded. Thank you for choosing Northern Linen. See you next week!`;
         const sms = await sendSms(booking.phone, msg);
         sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
       }
