@@ -349,6 +349,29 @@ function receiptHtml(p: {
 </td></tr></table></body></html>`;
 }
 
+// ---------------- PIN LOGIN ----------------
+const ADMIN_EMAIL = "info@northernlinen.com";
+
+export const verifyAdminPin = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ pin: z.string().regex(/^\d{6}$/) }).parse(input))
+  .handler(async ({ data }) => {
+    const expected = process.env.ADMIN_PIN;
+    if (!expected) return { ok: false, error: "ADMIN_PIN not configured" };
+    if (data.pin !== expected) return { ok: false, error: "Invalid PIN" };
+    try {
+      const { data: link, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: ADMIN_EMAIL,
+      });
+      if (error || !link?.properties?.hashed_token) {
+        return { ok: false, error: error?.message || "Failed to issue session" };
+      }
+      return { ok: true, token_hash: link.properties.hashed_token, error: null as string | null };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Unknown error" };
+    }
+  });
+
 // ---------------- BOOTSTRAP ADMIN ----------------
 export const claimAdminRole = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => tokenOnly.parse(input))
