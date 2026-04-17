@@ -1,7 +1,14 @@
+// ADMIN LOGIN SETUP:
+// 1. Set ADMIN_PIN environment variable to a 6 digit number of your choice in Lovable settings
+// 2. The admin login page at northernlinen.com/admin requires this 6 digit PIN
+// 3. Enter the PIN — it issues a secure session for info@northernlinen.com
+// 4. Session persists until you click Logout
+
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { CITY_TAX_RATES } from "@/lib/order-status";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
