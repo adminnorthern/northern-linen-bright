@@ -134,12 +134,37 @@ export const finalizeBooking = createServerFn({ method: "POST" })
       const authExpiry = new Date();
       authExpiry.setDate(authExpiry.getDate() + 7);
 
+      // Send confirmation SMS #1 (best effort)
+      let sms1Status = "pending";
+      try {
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const token = process.env.TWILIO_AUTH_TOKEN;
+        const from = process.env.TWILIO_PHONE_NUMBER;
+        if (sid && token && from) {
+          const cleaned = data.booking.phone.replace(/[^\d+]/g, "");
+          const e164 = cleaned.startsWith("+") ? cleaned : `+1${cleaned.replace(/^1/, "")}`;
+          const body = `Northern Linen: Your pickup is confirmed for ${data.booking.pickup_date} at ${data.booking.pickup_time}. Confirmation #${data.booking.confirmation_number}. We'll see you soon!`;
+          const auth = btoa(`${sid}:${token}`);
+          const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+            method: "POST",
+            headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ To: e164, From: from, Body: body }).toString(),
+          });
+          sms1Status = res.ok ? "sent" : `failed: ${res.status}`;
+        } else {
+          sms1Status = "twilio_not_configured";
+        }
+      } catch (e) {
+        sms1Status = `failed: ${e instanceof Error ? e.message : "unknown"}`.slice(0, 100);
+      }
+
       const { error } = await supabaseAdmin.from("bookings").insert({
         ...data.booking,
         stripe_payment_intent_id: data.payment_intent_id,
         hold_amount: data.hold_amount,
         auth_expiry_date: authExpiry.toISOString(),
         order_status: "pending",
+        sms_1_status: sms1Status,
       });
       if (error) {
         console.error("finalizeBooking insert failed:", error);
