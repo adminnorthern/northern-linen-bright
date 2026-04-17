@@ -153,8 +153,13 @@ function CalculatorPage() {
                 {(booking?.dry_cleaning_items ?? 0) > 0 && <Row label={`Dry cleaning (${booking?.dry_cleaning_items} × $${calc.ppd.toFixed(2)})`} value={`$${calc.dry.toFixed(2)}`} />}
                 {(booking?.comforters ?? 0) > 0 && <Row label={`Comforters (${booking?.comforters} × $${calc.ppc.toFixed(2)})`} value={`$${calc.comf.toFixed(2)}`} />}
                 <hr style={{ border: 0, borderTop: `1px solid ${SOFT}`, margin: "8px 0" }} />
+                <Row label="Subtotal" value={`$${calc.subtotal.toFixed(2)}`} />
+                <Row label="City" value={calc.city || "—"} />
+                <Row label="Tax rate" value={`${(calc.taxRate * 100).toFixed(3).replace(/\.?0+$/, "")}%`} />
+                <Row label="Tax amount" value={`$${calc.taxAmount.toFixed(2)}`} />
+                <hr style={{ border: 0, borderTop: `2px solid ${NAVY}`, margin: "8px 0" }} />
+                <Row label="Total to capture" value={`$${calc.total.toFixed(2)}`} bold />
                 <Row label="Original hold" value={`$${calc.hold.toFixed(2)}`} muted />
-                <Row label="Final total" value={`$${calc.total.toFixed(2)}`} bold />
                 {calc.exceedsHold && (
                   <p style={{ color: STEEL, fontSize: 12, margin: "8px 0 0", padding: 8, background: "rgba(91,157,181,0.08)", borderRadius: 6 }}>
                     Total exceeds the original hold. We will request an incremental authorization on the customer's card before capturing.
