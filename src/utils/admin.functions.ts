@@ -332,18 +332,28 @@ function receiptHtml(p: {
 
 // ---------------- BOOTSTRAP ADMIN (one-shot self-grant) ----------------
 // Allows the user logged in as info@northernlinen.com to grant themselves admin role.
-// Hardened: only works for that exact email.
+// Hardened: only works for that exact email. Verifies the access token sent in the body.
+const claimSchema = z.object({ access_token: z.string().min(10).max(4000) });
+
 export const claimAdminRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
-    const email = u?.user?.email;
-    if (email !== "info@northernlinen.com") {
-      return { error: "Only the owner email can claim admin role", granted: false };
+  .inputValidator((input: unknown) => claimSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(data.access_token);
+      if (userErr || !userData?.user) {
+        return { error: "Invalid session", granted: false };
+      }
+      const email = userData.user.email;
+      if (email !== "info@northernlinen.com") {
+        return { error: "Only the owner email can claim admin role", granted: false };
+      }
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: userData.user.id, role: "admin" }, { onConflict: "user_id,role" });
+      if (error) return { error: error.message, granted: false };
+      return { error: null as string | null, granted: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      return { error: msg, granted: false };
     }
-    const { error } = await supabaseAdmin
-      .from("user_roles")
-      .upsert({ user_id: context.userId, role: "admin" }, { onConflict: "user_id,role" });
-    if (error) return { error: error.message, granted: false };
-    return { error: null as string | null, granted: true };
   });
