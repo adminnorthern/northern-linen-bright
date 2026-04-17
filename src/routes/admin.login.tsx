@@ -72,7 +72,7 @@ function AdminLogin() {
         <p style={{ color: STEEL, fontSize: 14, marginBottom: 28 }}>Enter your 6-digit PIN</p>
 
         <input
-          type="text"
+          type="password"
           inputMode="numeric"
           autoComplete="one-time-code"
           autoFocus
