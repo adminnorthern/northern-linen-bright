@@ -134,7 +134,7 @@ export const finalizeBooking = createServerFn({ method: "POST" })
       const authExpiry = new Date();
       authExpiry.setDate(authExpiry.getDate() + 7);
 
-      // Send confirmation SMS #1 (best effort)
+      // Send confirmation SMS #1 (best effort, with one retry)
       let sms1Status = "pending";
       try {
         const sid = process.env.TWILIO_ACCOUNT_SID;
@@ -143,13 +143,16 @@ export const finalizeBooking = createServerFn({ method: "POST" })
         if (sid && token && from) {
           const cleaned = data.booking.phone.replace(/[^\d+]/g, "");
           const e164 = cleaned.startsWith("+") ? cleaned : `+1${cleaned.replace(/^1/, "")}`;
-          const body = `Northern Linen: Your pickup is confirmed for ${data.booking.pickup_date} at ${data.booking.pickup_time}. Confirmation #${data.booking.confirmation_number}. We'll see you soon!`;
+          const body = `Hi ${data.booking.customer_name} — your Northern Linen pickup is confirmed for ${data.booking.pickup_date} at ${data.booking.pickup_time}. Confirmation: ${data.booking.confirmation_number}. We will arrive between 7 and 9am. Please do not reply to this number. Questions? Visit northernlinen.com`;
           const auth = btoa(`${sid}:${token}`);
-          const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-            method: "POST",
-            headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ To: e164, From: from, Body: body }).toString(),
-          });
+          const sendOnce = () =>
+            fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+              method: "POST",
+              headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({ To: e164, From: from, Body: body }).toString(),
+            });
+          let res = await sendOnce();
+          if (!res.ok) res = await sendOnce();
           sms1Status = res.ok ? "sent" : `failed: ${res.status}`;
         } else {
           sms1Status = "twilio_not_configured";
