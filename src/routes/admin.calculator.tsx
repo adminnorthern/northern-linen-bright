@@ -4,6 +4,7 @@ import { captureBookingPayment, listBookings, listSettings } from "@/utils/admin
 import { withToken } from "@/lib/admin-api";
 import { Empty } from "./admin.index";
 import { Loader2 } from "lucide-react";
+import { taxRateForCity } from "@/lib/order-status";
 
 export const Route = createFileRoute("/admin/calculator")({
   component: CalculatorPage,
@@ -53,9 +54,13 @@ function CalculatorPage() {
     const wash = billable * ppl;
     const dry = (booking.dry_cleaning_items ?? 0) * ppd;
     const comf = (booking.comforters ?? 0) * ppc;
-    const total = wash + dry + comf;
+    const subtotal = wash + dry + comf;
+    const city = booking.city ?? "";
+    const taxRate = taxRateForCity(city);
+    const taxAmount = subtotal * taxRate;
+    const total = subtotal + taxAmount;
     const hold = Number(booking.hold_amount ?? 0);
-    return { min, billable, ppl, ppd, ppc, wash, dry, comf, total, hold, exceedsHold: total > hold };
+    return { min, billable, ppl, ppd, ppc, wash, dry, comf, subtotal, city, taxRate, taxAmount, total, hold, exceedsHold: total > hold };
   }, [booking, weight, settings]);
 
   if (loading) {
@@ -148,8 +153,13 @@ function CalculatorPage() {
                 {(booking?.dry_cleaning_items ?? 0) > 0 && <Row label={`Dry cleaning (${booking?.dry_cleaning_items} × $${calc.ppd.toFixed(2)})`} value={`$${calc.dry.toFixed(2)}`} />}
                 {(booking?.comforters ?? 0) > 0 && <Row label={`Comforters (${booking?.comforters} × $${calc.ppc.toFixed(2)})`} value={`$${calc.comf.toFixed(2)}`} />}
                 <hr style={{ border: 0, borderTop: `1px solid ${SOFT}`, margin: "8px 0" }} />
+                <Row label="Subtotal" value={`$${calc.subtotal.toFixed(2)}`} />
+                <Row label="City" value={calc.city || "—"} />
+                <Row label="Tax rate" value={`${(calc.taxRate * 100).toFixed(3).replace(/\.?0+$/, "")}%`} />
+                <Row label="Tax amount" value={`$${calc.taxAmount.toFixed(2)}`} />
+                <hr style={{ border: 0, borderTop: `2px solid ${NAVY}`, margin: "8px 0" }} />
+                <Row label="Total to capture" value={`$${calc.total.toFixed(2)}`} bold />
                 <Row label="Original hold" value={`$${calc.hold.toFixed(2)}`} muted />
-                <Row label="Final total" value={`$${calc.total.toFixed(2)}`} bold />
                 {calc.exceedsHold && (
                   <p style={{ color: STEEL, fontSize: 12, margin: "8px 0 0", padding: 8, background: "rgba(91,157,181,0.08)", borderRadius: 6 }}>
                     Total exceeds the original hold. We will request an incremental authorization on the customer's card before capturing.

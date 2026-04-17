@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listBookings, listSupplies, updateOrderStatus } from "@/utils/admin.functions";
 import { withToken } from "@/lib/admin-api";
 import { Loader2 } from "lucide-react";
+import { STATUS_META, NEXT_ACTION, type OrderStatus } from "@/lib/order-status";
 
 export const Route = createFileRoute("/admin/")({
   component: OperationsPage,
@@ -146,8 +147,7 @@ export function Empty({ text }: { text: string }) {
   return <p style={{ color: NAVY, fontSize: 16, textAlign: "center", padding: 32, border: `1.5px dashed ${SOFT}`, borderRadius: 12, margin: 0 }}>{text}</p>;
 }
 
-const STATUSES = ["pending", "picked_up", "washing", "out_for_delivery", "delivered", "cancelled"] as const;
-type Status = typeof STATUSES[number];
+type Status = OrderStatus;
 
 export function BookingTable({
   bookings,
@@ -160,7 +160,7 @@ export function BookingTable({
 }) {
   return (
     <div style={{ overflowX: "auto", border: `1.5px solid ${SOFT}`, borderRadius: 12 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
         <thead>
           <tr style={{ background: "rgba(91,157,181,0.05)" }}>
             <Th>#</Th>
@@ -168,37 +168,49 @@ export function BookingTable({
             <Th>Pickup</Th>
             <Th>Size</Th>
             <Th>Status</Th>
+            <Th>Action</Th>
           </tr>
         </thead>
         <tbody>
-          {bookings.map((b) => (
-            <tr key={b.id} style={{ borderTop: `1px solid ${SOFT}40` }}>
-              <Td>{b.confirmation_number}</Td>
-              <Td>
-                <div style={{ color: NAVY, fontWeight: 600 }}>{b.customer_name}</div>
-                <div style={{ color: STEEL, fontSize: 12 }}>{b.phone}</div>
-              </Td>
-              <Td>
-                {b.pickup_date}
-                <div style={{ color: STEEL, fontSize: 12 }}>{b.pickup_time}</div>
-              </Td>
-              <Td>{b.size_selected}</Td>
-              <Td>
-                <select
-                  value={b.order_status}
-                  disabled={savingId === b.id}
-                  onChange={(e) => onStatus(b, e.target.value as Status)}
-                  style={{ background: "#FFFFFF", border: `1.5px solid ${SOFT}`, borderRadius: 6, padding: "6px 10px", fontSize: 14, color: NAVY, cursor: "pointer" }}
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
-              </Td>
-            </tr>
-          ))}
+          {bookings.map((b) => {
+            const status = (b.order_status as OrderStatus);
+            const meta = STATUS_META[status] ?? { label: b.order_status, bg: "#6B7280", fg: "#FFFFFF" };
+            const next = NEXT_ACTION[status] ?? null;
+            const saving = savingId === b.id;
+            return (
+              <tr key={b.id} style={{ borderTop: `1px solid ${SOFT}40` }}>
+                <Td>{b.confirmation_number}</Td>
+                <Td>
+                  <div style={{ color: NAVY, fontWeight: 600 }}>{b.customer_name}</div>
+                  <div style={{ color: STEEL, fontSize: 12 }}>{b.phone}</div>
+                </Td>
+                <Td>
+                  {b.pickup_date}
+                  <div style={{ color: STEEL, fontSize: 12 }}>{b.pickup_time}</div>
+                </Td>
+                <Td>{b.size_selected}</Td>
+                <Td>
+                  <span style={{ display: "inline-block", background: meta.bg, color: meta.fg, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                    {meta.label}
+                  </span>
+                </Td>
+                <Td>
+                  {next ? (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => onStatus(b, next.next)}
+                      style={{ background: STEEL, color: "#FFFFFF", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, whiteSpace: "nowrap" }}
+                    >
+                      {saving ? "Saving…" : next.label}
+                    </button>
+                  ) : (
+                    <span style={{ color: STEEL, fontSize: 12 }}>—</span>
+                  )}
+                </Td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

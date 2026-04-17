@@ -1,7 +1,14 @@
+// ADMIN LOGIN SETUP:
+// 1. Set ADMIN_PIN environment variable to a 6 digit number of your choice in Lovable settings
+// 2. The admin login page at northernlinen.com/admin requires this 6 digit PIN
+// 3. Enter the PIN — it issues a secure session for info@northernlinen.com
+// 4. Session persists until you click Logout
+
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { CITY_TAX_RATES } from "@/lib/order-status";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -114,8 +121,8 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       if (be || !booking) return { error: "Booking not found" };
 
       let sms2: string | undefined;
-      if (data.order_status === "out_for_delivery" && booking.sms_2_status !== "sent") {
-        const msg = `Northern Linen: Your laundry is out for delivery and will arrive today. Thank you for choosing us!`;
+      if (data.order_status === "delivered" && booking.sms_2_status !== "sent") {
+        const msg = `Northern Linen: Your laundry has been delivered and is at your door. Fresh clean and folded. Thank you for choosing Northern Linen. See you next week!`;
         const sms = await sendSms(booking.phone, msg);
         sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
       }
@@ -239,7 +246,12 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         billableWeight * pricePerLb +
         (booking.dry_cleaning_items ?? 0) * pricePerDry +
         (booking.comforters ?? 0) * pricePerComf;
-      const finalCents = Math.round(finalTotal * 100);
+
+      const cityKey = (booking.city ?? "").toLowerCase().trim();
+      const taxRate = CITY_TAX_RATES[cityKey] ?? 0.0903;
+      const taxAmount = finalTotal * taxRate;
+      const finalTotalWithTax = finalTotal + taxAmount;
+      const finalCents = Math.round(finalTotalWithTax * 100);
 
       const stripe = getStripe();
       const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
@@ -269,6 +281,7 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         return { error: msg };
       }
 
+      const capturedDollars = captureAmt / 100;
       const html = receiptHtml({
         name: booking.customer_name,
         confirmation: booking.confirmation_number,
@@ -279,7 +292,11 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         pricePerDry,
         comf: booking.comforters ?? 0,
         pricePerComf,
-        total: captureAmt / 100,
+        subtotal: finalTotal,
+        taxRate,
+        taxAmount,
+        city: booking.city ?? "",
+        total: capturedDollars,
       });
       const emailRes = await sendEmail(booking.email, `Your Northern Linen receipt — ${booking.confirmation_number}`, html);
 
@@ -287,13 +304,19 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         .from("bookings")
         .update({
           actual_weight: data.actual_weight,
-          final_captured_amount: captureAmt / 100,
+          final_captured_amount: capturedDollars,
           order_status: "delivered",
           receipt_email_status: emailRes.ok ? "sent" : `failed: ${emailRes.error}`.slice(0, 100),
         })
         .eq("id", data.booking_id);
 
-      return { error: null as string | null, captured: captureAmt / 100 };
+      return {
+        error: null as string | null,
+        captured: capturedDollars,
+        subtotal: finalTotal,
+        taxRate,
+        taxAmount,
+      };
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Failed" };
     }
@@ -309,6 +332,10 @@ function receiptHtml(p: {
   pricePerDry: number;
   comf: number;
   pricePerComf: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  city: string;
   total: number;
 }): string {
   const NAVY = "#1B3A4B";
@@ -329,6 +356,9 @@ function receiptHtml(p: {
     );
   }
 
+  const ratePct = (p.taxRate * 100).toFixed(p.taxRate * 100 % 1 === 0 ? 0 : 3).replace(/\.?0+$/, "");
+  const cityLabel = p.city ? `${p.city} ` : "";
+
   return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;color:${NAVY}">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:40px 20px"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1.5px solid ${SOFT};border-radius:12px;padding:40px">
@@ -341,7 +371,21 @@ function receiptHtml(p: {
     <table width="100%" cellpadding="0" cellspacing="0">${lines.join("")}</table>
     <hr style="border:0;border-top:1px solid ${SOFT};margin:16px 0">
     <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:16px">Total charged</td><td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:16px;text-align:right">$${p.total.toFixed(2)}</td></tr>
+      <tr>
+        <td style="padding:6px 0;color:${STEEL};font-weight:600">Subtotal</td>
+        <td style="padding:6px 0;color:${NAVY};font-weight:600;text-align:right">$${p.subtotal.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:${STEEL}">Sales Tax (${cityLabel}${ratePct}%)</td>
+        <td style="padding:6px 0;color:${NAVY};text-align:right">$${p.taxAmount.toFixed(2)}</td>
+      </tr>
+    </table>
+    <hr style="border:0;border-top:2px solid ${NAVY};margin:12px 0">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px">Total Charged</td>
+        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px;text-align:right">$${p.total.toFixed(2)}</td>
+      </tr>
     </table>
     <p style="color:${STEEL};margin:24px 0 0;font-size:13px">Questions? Reply to this email or contact us at info@northernlinen.com</p>
   </td></tr>
