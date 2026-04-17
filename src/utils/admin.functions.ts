@@ -332,6 +332,10 @@ function receiptHtml(p: {
   pricePerDry: number;
   comf: number;
   pricePerComf: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  city: string;
   total: number;
 }): string {
   const NAVY = "#1B3A4B";
@@ -352,6 +356,9 @@ function receiptHtml(p: {
     );
   }
 
+  const ratePct = (p.taxRate * 100).toFixed(p.taxRate * 100 % 1 === 0 ? 0 : 3).replace(/\.?0+$/, "");
+  const cityLabel = p.city ? `${p.city} ` : "";
+
   return `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,sans-serif;color:${NAVY}">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:40px 20px"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1.5px solid ${SOFT};border-radius:12px;padding:40px">
@@ -364,7 +371,21 @@ function receiptHtml(p: {
     <table width="100%" cellpadding="0" cellspacing="0">${lines.join("")}</table>
     <hr style="border:0;border-top:1px solid ${SOFT};margin:16px 0">
     <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:16px">Total charged</td><td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:16px;text-align:right">$${p.total.toFixed(2)}</td></tr>
+      <tr>
+        <td style="padding:6px 0;color:${STEEL};font-weight:600">Subtotal</td>
+        <td style="padding:6px 0;color:${NAVY};font-weight:600;text-align:right">$${p.subtotal.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:${STEEL}">Sales Tax (${cityLabel}${ratePct}%)</td>
+        <td style="padding:6px 0;color:${NAVY};text-align:right">$${p.taxAmount.toFixed(2)}</td>
+      </tr>
+    </table>
+    <hr style="border:0;border-top:2px solid ${NAVY};margin:12px 0">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px">Total Charged</td>
+        <td style="padding:8px 0;color:${NAVY};font-weight:700;font-size:18px;text-align:right">$${p.total.toFixed(2)}</td>
+      </tr>
     </table>
     <p style="color:${STEEL};margin:24px 0 0;font-size:13px">Questions? Reply to this email or contact us at info@northernlinen.com</p>
   </td></tr>
