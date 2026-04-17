@@ -54,9 +54,13 @@ function CalculatorPage() {
     const wash = billable * ppl;
     const dry = (booking.dry_cleaning_items ?? 0) * ppd;
     const comf = (booking.comforters ?? 0) * ppc;
-    const total = wash + dry + comf;
+    const subtotal = wash + dry + comf;
+    const city = booking.city ?? "";
+    const taxRate = taxRateForCity(city);
+    const taxAmount = subtotal * taxRate;
+    const total = subtotal + taxAmount;
     const hold = Number(booking.hold_amount ?? 0);
-    return { min, billable, ppl, ppd, ppc, wash, dry, comf, total, hold, exceedsHold: total > hold };
+    return { min, billable, ppl, ppd, ppc, wash, dry, comf, subtotal, city, taxRate, taxAmount, total, hold, exceedsHold: total > hold };
   }, [booking, weight, settings]);
 
   if (loading) {
