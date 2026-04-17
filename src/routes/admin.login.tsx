@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { claimAdminRole } from "@/utils/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/login")({
@@ -34,11 +35,14 @@ function AdminLogin() {
   // If signed in but not admin, try to claim role (only works for owner email)
   useEffect(() => {
     if (!auth.loading && auth.isAuthenticated && !auth.isAdmin) {
-      claimAdminRole().then((res) => {
-        if (res.granted) {
-          // refresh role check
-          window.location.href = "/admin";
-        }
+      supabase.auth.getSession().then(({ data }) => {
+        const token = data.session?.access_token;
+        if (!token) return;
+        claimAdminRole({ data: { access_token: token } }).then((res) => {
+          if (res.granted) {
+            window.location.href = "/admin";
+          }
+        });
       });
     }
   }, [auth.loading, auth.isAuthenticated, auth.isAdmin]);
