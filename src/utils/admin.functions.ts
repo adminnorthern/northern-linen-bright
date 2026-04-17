@@ -130,7 +130,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
 
       let sms2: string | undefined;
       if (data.order_status === "delivered" && booking.sms_2_status !== "sent") {
-        const msg = `Northern Linen: Your laundry has been delivered and is at your door. Fresh clean and folded. Thank you for choosing Northern Linen. See you next week!`;
+        const msg = `Hi ${booking.customer_name} — your Northern Linen laundry has been delivered and is at your door. Fresh, clean, and folded. Thank you for choosing Northern Linen. See you next week!`;
         const sms = await sendSms(booking.phone, msg);
         sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
       }
