@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { listSettings, listSupplies, updateSetting, updateSupplyStock } from "@/utils/admin.functions";
+import { withToken } from "@/lib/admin-api";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -28,9 +29,12 @@ function SettingsPage() {
   const [savingSupply, setSavingSupply] = useState<string | null>(null);
 
   async function load() {
-    const [s, sup] = await Promise.all([listSettings(), listSupplies()]);
-    setSettings(s.settings);
-    setSupplies(sup.supplies);
+    const [s, sup] = await Promise.all([
+      listSettings({ data: await withToken({}) }),
+      listSupplies({ data: await withToken({}) }),
+    ]);
+    setSettings(s.settings ?? []);
+    setSupplies(sup.supplies ?? []);
     setLoading(false);
   }
   useEffect(() => {
@@ -62,7 +66,7 @@ function SettingsPage() {
               saving={savingKey === s.key}
               onSave={async (v) => {
                 setSavingKey(s.key);
-                await updateSetting({ data: { key: s.key, value: v } });
+                await updateSetting({ data: await withToken({ key: s.key, value: v }) });
                 await load();
                 setSavingKey(null);
               }}
@@ -92,7 +96,7 @@ function SettingsPage() {
                   saving={savingSupply === s.id}
                   onSave={async (v) => {
                     setSavingSupply(s.id);
-                    await updateSupplyStock({ data: { id: s.id, current_stock: v } });
+                    await updateSupplyStock({ data: await withToken({ id: s.id, current_stock: v }) });
                     await load();
                     setSavingSupply(null);
                   }}

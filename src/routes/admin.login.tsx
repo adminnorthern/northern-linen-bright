@@ -38,7 +38,7 @@ function AdminLogin() {
       supabase.auth.getSession().then(({ data }) => {
         const token = data.session?.access_token;
         if (!token) return;
-        claimAdminRole({ data: { access_token: token } }).then((res) => {
+        claimAdminRole({ data: { access_token: token } }).then((res: { granted: boolean }) => {
           if (res.granted) {
             window.location.href = "/admin";
           }

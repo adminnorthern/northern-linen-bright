@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { listBookings } from "@/utils/admin.functions";
+import { withToken } from "@/lib/admin-api";
 import { Empty } from "./admin.index";
 import { Loader2 } from "lucide-react";
 
@@ -30,10 +31,11 @@ function CustomersPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    listBookings().then((r) => {
-      setBookings(r.bookings);
+    (async () => {
+      const r = await listBookings({ data: await withToken({}) });
+      setBookings(r.bookings ?? []);
       setLoading(false);
-    });
+    })();
   }, []);
 
   const customers = useMemo<Customer[]>(() => {

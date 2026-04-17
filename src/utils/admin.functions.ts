@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -10,16 +9,24 @@ function getStripe(): Stripe {
   return new Stripe(key, { apiVersion: "2023-10-16" as never });
 }
 
-async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin
+// Verifies the access token from the request body and returns the userId,
+// throwing if the user is not signed in or not an admin.
+async function verifyAdmin(accessToken: string): Promise<string> {
+  const { data, error } = await supabaseAdmin.auth.getUser(accessToken);
+  if (error || !data?.user) throw new Error("Unauthorized");
+  const userId = data.user.id;
+  const { data: role, error: roleErr } = await supabaseAdmin
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  if (error) throw new Error("Failed to verify admin role");
-  if (!data) throw new Error("Forbidden: admin role required");
+  if (roleErr) throw new Error("Failed to verify admin role");
+  if (!role) throw new Error("Forbidden: admin role required");
+  return userId;
 }
+
+const tokenOnly = z.object({ access_token: z.string().min(10).max(4000) });
 
 // ---------------- TWILIO ----------------
 async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
@@ -27,17 +34,13 @@ async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?:
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER;
   if (!sid || !token || !from) return { ok: false, error: "Twilio not configured" };
-  // E.164 ensure
   const cleaned = to.replace(/[^\d+]/g, "");
   const e164 = cleaned.startsWith("+") ? cleaned : `+1${cleaned.replace(/^1/, "")}`;
   try {
     const auth = btoa(`${sid}:${token}`);
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ To: e164, From: from, Body: body }).toString(),
     });
     if (!res.ok) {
@@ -57,10 +60,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<{ o
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Northern Linen <info@northernlinen.com>",
         to: [to],
@@ -79,205 +79,224 @@ async function sendEmail(to: string, subject: string, html: string): Promise<{ o
 }
 
 // ---------------- LIST BOOKINGS ----------------
-export const listBookings = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("bookings")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) return { error: error.message, bookings: [] };
-    return { error: null as string | null, bookings: data ?? [] };
+export const listBookings = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => tokenOnly.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { data: rows, error } = await supabaseAdmin
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) return { error: error.message, bookings: [] as never[] };
+      return { error: null as string | null, bookings: rows ?? [] };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed", bookings: [] as never[] };
+    }
   });
 
-// ---------------- UPDATE ORDER STATUS (with auto SMS #2 on out_for_delivery) ----------------
-const updateStatusSchema = z.object({
+// ---------------- UPDATE ORDER STATUS ----------------
+const updateStatusSchema = tokenOnly.extend({
   booking_id: z.string().uuid(),
   order_status: z.enum(["pending", "picked_up", "washing", "out_for_delivery", "delivered", "cancelled"]),
 });
 
 export const updateOrderStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateStatusSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
-    const { data: booking, error: be } = await supabaseAdmin
-      .from("bookings")
-      .select("*")
-      .eq("id", data.booking_id)
-      .maybeSingle();
-    if (be || !booking) return { error: "Booking not found" };
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { data: booking, error: be } = await supabaseAdmin
+        .from("bookings")
+        .select("*")
+        .eq("id", data.booking_id)
+        .maybeSingle();
+      if (be || !booking) return { error: "Booking not found" };
 
-    let sms2: string | undefined;
-    // Auto-send SMS #2 when marked out_for_delivery
-    if (data.order_status === "out_for_delivery" && booking.sms_2_status !== "sent") {
-      const msg = `Northern Linen: Your laundry is out for delivery and will arrive today. Thank you for choosing us!`;
-      const sms = await sendSms(booking.phone, msg);
-      sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
+      let sms2: string | undefined;
+      if (data.order_status === "out_for_delivery" && booking.sms_2_status !== "sent") {
+        const msg = `Northern Linen: Your laundry is out for delivery and will arrive today. Thank you for choosing us!`;
+        const sms = await sendSms(booking.phone, msg);
+        sms2 = sms.ok ? "sent" : `failed: ${sms.error}`.slice(0, 100);
+      }
+
+      const { error } = await supabaseAdmin
+        .from("bookings")
+        .update(sms2 !== undefined ? { order_status: data.order_status, sms_2_status: sms2 } : { order_status: data.order_status })
+        .eq("id", data.booking_id);
+      if (error) return { error: error.message };
+      return { error: null as string | null };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed" };
     }
-
-    const { error } = await supabaseAdmin
-      .from("bookings")
-      .update(sms2 !== undefined ? { order_status: data.order_status, sms_2_status: sms2 } : { order_status: data.order_status })
-      .eq("id", data.booking_id);
-    if (error) return { error: error.message };
-    return { error: null as string | null };
   });
 
 // ---------------- LIST SUPPLIES ----------------
-export const listSupplies = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("supplies")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (error) return { error: error.message, supplies: [] };
-    return { error: null as string | null, supplies: data ?? [] };
+export const listSupplies = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => tokenOnly.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { data: rows, error } = await supabaseAdmin
+        .from("supplies")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) return { error: error.message, supplies: [] as never[] };
+      return { error: null as string | null, supplies: rows ?? [] };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed", supplies: [] as never[] };
+    }
   });
 
-const updateSupplySchema = z.object({
+const updateSupplySchema = tokenOnly.extend({
   id: z.string().uuid(),
   current_stock: z.number().int().min(0).max(100000),
 });
 
 export const updateSupplyStock = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateSupplySchema.parse(input))
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("supplies")
-      .update({ current_stock: data.current_stock })
-      .eq("id", data.id);
-    if (error) return { error: error.message };
-    return { error: null as string | null };
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { error } = await supabaseAdmin
+        .from("supplies")
+        .update({ current_stock: data.current_stock })
+        .eq("id", data.id);
+      if (error) return { error: error.message };
+      return { error: null as string | null };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed" };
+    }
   });
 
 // ---------------- LIST SETTINGS ----------------
-export const listSettings = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
-    const { data, error } = await supabaseAdmin.from("app_settings").select("*").order("key");
-    if (error) return { error: error.message, settings: [] };
-    return { error: null as string | null, settings: data ?? [] };
+export const listSettings = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => tokenOnly.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { data: rows, error } = await supabaseAdmin.from("app_settings").select("*").order("key");
+      if (error) return { error: error.message, settings: [] as never[] };
+      return { error: null as string | null, settings: rows ?? [] };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed", settings: [] as never[] };
+    }
   });
 
-const updateSettingSchema = z.object({
+const updateSettingSchema = tokenOnly.extend({
   key: z.string().min(1).max(100),
   value: z.number().min(0).max(100000),
 });
 
 export const updateSetting = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateSettingSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("app_settings")
-      .update({ value: data.value })
-      .eq("key", data.key);
-    if (error) return { error: error.message };
-    return { error: null as string | null };
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
+      const { error } = await supabaseAdmin
+        .from("app_settings")
+        .update({ value: data.value })
+        .eq("key", data.key);
+      if (error) return { error: error.message };
+      return { error: null as string | null };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Failed" };
+    }
   });
 
-// ---------------- CAPTURE PAYMENT (with incremental auth + receipt) ----------------
-const captureSchema = z.object({
+// ---------------- CAPTURE PAYMENT ----------------
+const captureSchema = tokenOnly.extend({
   booking_id: z.string().uuid(),
   actual_weight: z.number().min(0).max(500),
 });
 
 export const captureBookingPayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => captureSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+  .handler(async ({ data }) => {
+    try {
+      await verifyAdmin(data.access_token);
 
-    const { data: booking, error: be } = await supabaseAdmin
-      .from("bookings")
-      .select("*")
-      .eq("id", data.booking_id)
-      .maybeSingle();
-    if (be || !booking) return { error: "Booking not found" };
-    if (!booking.stripe_payment_intent_id) return { error: "No payment intent on booking" };
-    if (booking.order_status === "delivered") return { error: "Already captured" };
+      const { data: booking, error: be } = await supabaseAdmin
+        .from("bookings")
+        .select("*")
+        .eq("id", data.booking_id)
+        .maybeSingle();
+      if (be || !booking) return { error: "Booking not found" };
+      if (!booking.stripe_payment_intent_id) return { error: "No payment intent on booking" };
+      if (booking.order_status === "delivered") return { error: "Already captured" };
 
-    // Pull pricing from settings
-    const { data: settings } = await supabaseAdmin.from("app_settings").select("*");
-    const settingsMap = Object.fromEntries((settings ?? []).map((s) => [s.key, Number(s.value)]));
-    const pricePerLb = settingsMap.price_per_lb ?? 2.5;
-    const pricePerDry = settingsMap.price_per_dry_clean ?? 10;
-    const pricePerComf = settingsMap.price_per_comforter ?? 40;
+      const { data: settings } = await supabaseAdmin.from("app_settings").select("*");
+      const settingsMap = Object.fromEntries((settings ?? []).map((s) => [s.key, Number(s.value)]));
+      const pricePerLb = settingsMap.price_per_lb ?? 2.5;
+      const pricePerDry = settingsMap.price_per_dry_clean ?? 10;
+      const pricePerComf = settingsMap.price_per_comforter ?? 40;
 
-    const sizeMin: Record<string, number> = { Regular: 25, Big: 40, Jumbo: 60 };
-    const min = sizeMin[booking.size_selected] ?? 25;
-    const billableWeight = Math.max(data.actual_weight, min);
+      const sizeMin: Record<string, number> = { Regular: 25, Big: 40, Jumbo: 60 };
+      const min = sizeMin[booking.size_selected] ?? 25;
+      const billableWeight = Math.max(data.actual_weight, min);
 
-    const finalTotal =
-      billableWeight * pricePerLb +
-      (booking.dry_cleaning_items ?? 0) * pricePerDry +
-      (booking.comforters ?? 0) * pricePerComf;
-    const finalCents = Math.round(finalTotal * 100);
+      const finalTotal =
+        billableWeight * pricePerLb +
+        (booking.dry_cleaning_items ?? 0) * pricePerDry +
+        (booking.comforters ?? 0) * pricePerComf;
+      const finalCents = Math.round(finalTotal * 100);
 
-    const stripe = getStripe();
-    const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
-    if (intent.status !== "requires_capture") {
-      return { error: `Payment not capturable (status: ${intent.status})` };
-    }
+      const stripe = getStripe();
+      const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+      if (intent.status !== "requires_capture") {
+        return { error: `Payment not capturable (status: ${intent.status})` };
+      }
 
-    // Incremental auth if final exceeds existing hold
-    if (finalCents > intent.amount) {
+      if (finalCents > intent.amount) {
+        try {
+          await stripe.paymentIntents.incrementAuthorization(booking.stripe_payment_intent_id, {
+            amount: finalCents,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Incremental authorization failed";
+          return { error: `Could not increase hold: ${msg}` };
+        }
+      }
+
+      const refreshed = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+      const captureAmt = Math.min(finalCents, refreshed.amount);
       try {
-        await stripe.paymentIntents.incrementAuthorization(booking.stripe_payment_intent_id, {
-          amount: finalCents,
+        await stripe.paymentIntents.capture(booking.stripe_payment_intent_id, {
+          amount_to_capture: captureAmt,
         });
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Incremental authorization failed";
-        return { error: `Could not increase hold: ${msg}` };
+        const msg = e instanceof Error ? e.message : "Capture failed";
+        return { error: msg };
       }
-    }
 
-    // Capture (cap to current authorized amount)
-    const refreshed = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
-    const captureAmt = Math.min(finalCents, refreshed.amount);
-    try {
-      await stripe.paymentIntents.capture(booking.stripe_payment_intent_id, {
-        amount_to_capture: captureAmt,
+      const html = receiptHtml({
+        name: booking.customer_name,
+        confirmation: booking.confirmation_number,
+        weight: data.actual_weight,
+        billableWeight,
+        pricePerLb,
+        dry: booking.dry_cleaning_items ?? 0,
+        pricePerDry,
+        comf: booking.comforters ?? 0,
+        pricePerComf,
+        total: captureAmt / 100,
       });
+      const emailRes = await sendEmail(booking.email, `Your Northern Linen receipt — ${booking.confirmation_number}`, html);
+
+      await supabaseAdmin
+        .from("bookings")
+        .update({
+          actual_weight: data.actual_weight,
+          final_captured_amount: captureAmt / 100,
+          order_status: "delivered",
+          receipt_email_status: emailRes.ok ? "sent" : `failed: ${emailRes.error}`.slice(0, 100),
+        })
+        .eq("id", data.booking_id);
+
+      return { error: null as string | null, captured: captureAmt / 100 };
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Capture failed";
-      return { error: msg };
+      return { error: e instanceof Error ? e.message : "Failed" };
     }
-
-    // Send receipt
-    const html = receiptHtml({
-      name: booking.customer_name,
-      confirmation: booking.confirmation_number,
-      weight: data.actual_weight,
-      billableWeight,
-      pricePerLb,
-      dry: booking.dry_cleaning_items ?? 0,
-      pricePerDry,
-      comf: booking.comforters ?? 0,
-      pricePerComf,
-      total: captureAmt / 100,
-    });
-    const emailRes = await sendEmail(booking.email, `Your Northern Linen receipt — ${booking.confirmation_number}`, html);
-
-    await supabaseAdmin
-      .from("bookings")
-      .update({
-        actual_weight: data.actual_weight,
-        final_captured_amount: captureAmt / 100,
-        order_status: "delivered",
-        receipt_email_status: emailRes.ok ? "sent" : `failed: ${emailRes.error}`.slice(0, 100),
-      })
-      .eq("id", data.booking_id);
-
-    return { error: null as string | null, captured: captureAmt / 100 };
   });
 
 function receiptHtml(p: {
@@ -330,13 +349,9 @@ function receiptHtml(p: {
 </td></tr></table></body></html>`;
 }
 
-// ---------------- BOOTSTRAP ADMIN (one-shot self-grant) ----------------
-// Allows the user logged in as info@northernlinen.com to grant themselves admin role.
-// Hardened: only works for that exact email. Verifies the access token sent in the body.
-const claimSchema = z.object({ access_token: z.string().min(10).max(4000) });
-
+// ---------------- BOOTSTRAP ADMIN ----------------
 export const claimAdminRole = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => claimSchema.parse(input))
+  .inputValidator((input: unknown) => tokenOnly.parse(input))
   .handler(async ({ data }) => {
     try {
       const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(data.access_token);
@@ -353,7 +368,6 @@ export const claimAdminRole = createServerFn({ method: "POST" })
       if (error) return { error: error.message, granted: false };
       return { error: null as string | null, granted: true };
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      return { error: msg, granted: false };
+      return { error: e instanceof Error ? e.message : "Unknown error", granted: false };
     }
   });

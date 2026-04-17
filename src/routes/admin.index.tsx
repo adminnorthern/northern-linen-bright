@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { listBookings, listSupplies, updateOrderStatus } from "@/utils/admin.functions";
+import { withToken } from "@/lib/admin-api";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -25,9 +26,12 @@ function OperationsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
 
   async function load() {
-    const [b, s] = await Promise.all([listBookings(), listSupplies()]);
-    setBookings(b.bookings);
-    setSupplies(s.supplies);
+    const [b, s] = await Promise.all([
+      listBookings({ data: await withToken({}) }),
+      listSupplies({ data: await withToken({}) }),
+    ]);
+    setBookings(b.bookings ?? []);
+    setSupplies(s.supplies ?? []);
     setLoading(false);
   }
   useEffect(() => {
@@ -74,7 +78,7 @@ function OperationsPage() {
             savingId={savingId}
             onStatus={async (b, status) => {
               setSavingId(b.id);
-              await updateOrderStatus({ data: { booking_id: b.id, order_status: status } });
+              await updateOrderStatus({ data: await withToken({ booking_id: b.id, order_status: status }) });
               await load();
               setSavingId(null);
             }}
@@ -91,7 +95,7 @@ function OperationsPage() {
             savingId={savingId}
             onStatus={async (b, status) => {
               setSavingId(b.id);
-              await updateOrderStatus({ data: { booking_id: b.id, order_status: status } });
+              await updateOrderStatus({ data: await withToken({ booking_id: b.id, order_status: status }) });
               await load();
               setSavingId(null);
             }}

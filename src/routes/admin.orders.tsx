@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { listBookings, updateOrderStatus } from "@/utils/admin.functions";
+import { withToken } from "@/lib/admin-api";
 import { BookingTable, Empty, Section } from "./admin.index";
 import { Loader2 } from "lucide-react";
 
@@ -22,8 +23,8 @@ function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   async function load() {
-    const r = await listBookings();
-    setBookings(r.bookings);
+    const r = await listBookings({ data: await withToken({}) });
+    setBookings(r.bookings ?? []);
     setLoading(false);
   }
   useEffect(() => {
@@ -91,7 +92,7 @@ function OrdersPage() {
             savingId={savingId}
             onStatus={async (b, status) => {
               setSavingId(b.id);
-              await updateOrderStatus({ data: { booking_id: b.id, order_status: status } });
+              await updateOrderStatus({ data: await withToken({ booking_id: b.id, order_status: status }) });
               await load();
               setSavingId(null);
             }}
