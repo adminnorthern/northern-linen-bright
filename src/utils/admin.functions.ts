@@ -257,7 +257,7 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
 
       const cityKey = (booking.city ?? "").toLowerCase().trim();
       const taxRate = CITY_TAX_RATES[cityKey] ?? 0.0903;
-      const taxAmount = finalTotal * taxRate;
+      const taxAmount = Math.round(finalTotal * taxRate * 100) / 100;
       const finalTotalWithTax = finalTotal + taxAmount;
       const finalCents = Math.round(finalTotalWithTax * 100);
 
