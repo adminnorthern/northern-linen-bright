@@ -246,7 +246,12 @@ export const captureBookingPayment = createServerFn({ method: "POST" })
         billableWeight * pricePerLb +
         (booking.dry_cleaning_items ?? 0) * pricePerDry +
         (booking.comforters ?? 0) * pricePerComf;
-      const finalCents = Math.round(finalTotal * 100);
+
+      const cityKey = (booking.city ?? "").toLowerCase().trim();
+      const taxRate = CITY_TAX_RATES[cityKey] ?? 0.0903;
+      const taxAmount = finalTotal * taxRate;
+      const finalTotalWithTax = finalTotal + taxAmount;
+      const finalCents = Math.round(finalTotalWithTax * 100);
 
       const stripe = getStripe();
       const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
