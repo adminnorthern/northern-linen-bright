@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { captureBookingPayment, listBookings, listSettings } from "@/utils/admin.functions";
+import { withToken } from "@/lib/admin-api";
 import { Empty } from "./admin.index";
 import { Loader2 } from "lucide-react";
 
@@ -26,10 +27,13 @@ function CalculatorPage() {
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   async function load() {
-    const [b, s] = await Promise.all([listBookings(), listSettings()]);
-    const open = b.bookings.filter((x) => !["delivered", "cancelled"].includes(x.order_status));
+    const [b, s] = await Promise.all([
+      listBookings({ data: await withToken({}) }),
+      listSettings({ data: await withToken({}) }),
+    ]);
+    const open = (b.bookings ?? []).filter((x) => !["delivered", "cancelled"].includes(x.order_status));
     setBookings(open);
-    setSettings(Object.fromEntries(s.settings.map((row: Setting) => [row.key, Number(row.value)])));
+    setSettings(Object.fromEntries((s.settings ?? []).map((row: Setting) => [row.key, Number(row.value)])));
     setLoading(false);
   }
   useEffect(() => {
@@ -109,7 +113,7 @@ function CalculatorPage() {
                 if (!booking) return;
                 setSubmitting(true);
                 setResult(null);
-                const r = await captureBookingPayment({ data: { booking_id: booking.id, actual_weight: weight } });
+                const r = await captureBookingPayment({ data: await withToken({ booking_id: booking.id, actual_weight: weight }) });
                 setSubmitting(false);
                 if (r.error) {
                   setResult({ ok: false, msg: r.error });
