@@ -76,11 +76,11 @@ function AdminLayout() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF", display: "flex", flexDirection: "column" }}>
-      <header style={{ background: "#FFFFFF", borderBottom: `1.5px solid ${SOFT}`, padding: "16px 24px" }}>
+    <div style={{ minHeight: "100vh", background: NAVY, display: "flex", flexDirection: "column" }}>
+      <header style={{ background: NAVY, borderBottom: `1.5px solid rgba(255,255,255,0.15)`, padding: "16px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-            <Link to="/admin" style={{ color: NAVY, fontSize: 18, fontWeight: 700, textDecoration: "none" }}>
+            <Link to="/admin" style={{ color: "#FFFFFF", fontSize: 18, fontWeight: 700, textDecoration: "none" }}>
               Northern Linen Admin
             </Link>
             <nav style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -91,7 +91,7 @@ function AdminLayout() {
                   activeOptions={{ exact: !!t.exact }}
                   style={{ textDecoration: "none" }}
                   activeProps={{ style: { background: STEEL, color: "#FFFFFF", borderRadius: 8, padding: "8px 14px", fontSize: 14, fontWeight: 600, textDecoration: "none" } }}
-                  inactiveProps={{ style: { color: NAVY, padding: "8px 14px", fontSize: 14, fontWeight: 600, textDecoration: "none", borderRadius: 8 } }}
+                  inactiveProps={{ style: { color: "#FFFFFF", padding: "8px 14px", fontSize: 14, fontWeight: 600, textDecoration: "none", borderRadius: 8 } }}
                 >
                   {t.label}
                 </Link>
@@ -103,13 +103,13 @@ function AdminLayout() {
               await auth.signOut();
               navigate({ to: "/admin/login" });
             }}
-            style={{ display: "flex", alignItems: "center", gap: 8, background: "#FFFFFF", color: NAVY, border: `1.5px solid ${SOFT}`, borderRadius: 8, padding: "8px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", color: "#FFFFFF", border: `1.5px solid rgba(255,255,255,0.4)`, borderRadius: 8, padding: "8px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
           >
             <LogOut size={16} /> Sign out
           </button>
         </div>
       </header>
-      <main style={{ flex: 1, padding: "32px 24px", background: "#FFFFFF" }}>
+      <main style={{ flex: 1, padding: "32px 24px", background: NAVY }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <Outlet />
         </div>
