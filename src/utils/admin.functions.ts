@@ -5,10 +5,12 @@
 // 4. Session persists until you click Logout
 
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { CITY_TAX_RATES } from "@/lib/order-status";
+import { checkRateLimit, clearRateLimit, getClientIp } from "@/lib/rate-limit.server";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -451,20 +453,44 @@ const ADMIN_EMAIL = "info@northernlinen.com";
 export const verifyAdminPin = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ pin: z.string().regex(/^\d{6}$/) }).parse(input))
   .handler(async ({ data }) => {
+    const ip = getClientIp(new Headers(getRequestHeaders() as HeadersInit));
+
+    // Rate limit: 5 failed attempts per IP per hour. We pre-check here; if the
+    // PIN is correct we clear the counter so success doesn't burn a slot.
+    const rl = await checkRateLimit({
+      scope: "admin_pin",
+      ip,
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rl.allowed) {
+      return {
+        ok: false as const,
+        error: "Too many failed login attempts. Please try again in 60 minutes.",
+      };
+    }
+
     const expected = process.env.ADMIN_PIN;
-    if (!expected) return { ok: false, error: "ADMIN_PIN not configured" };
-    if (data.pin !== expected) return { ok: false, error: "Invalid PIN" };
+    if (!expected) return { ok: false as const, error: "ADMIN_PIN not configured" };
+    if (data.pin !== expected) return { ok: false as const, error: "Invalid PIN" };
+
     try {
       const { data: link, error } = await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email: ADMIN_EMAIL,
       });
       if (error || !link?.properties?.hashed_token) {
-        return { ok: false, error: error?.message || "Failed to issue session" };
+        return { ok: false as const, error: error?.message || "Failed to issue session" };
       }
-      return { ok: true, token_hash: link.properties.hashed_token, error: null as string | null };
+      // Successful auth — wipe the IP's failure counter so legit retries are clean.
+      await clearRateLimit("admin_pin", ip);
+      return {
+        ok: true as const,
+        token_hash: link.properties.hashed_token,
+        error: null as string | null,
+      };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Unknown error" };
+      return { ok: false as const, error: e instanceof Error ? e.message : "Unknown error" };
     }
   });
 

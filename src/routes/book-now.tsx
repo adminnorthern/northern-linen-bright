@@ -66,8 +66,21 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 type Errors = Partial<Record<keyof FormData, string>> & { card?: string; submit?: string };
 
+// 8-char alphanumeric tail (uppercase, no ambiguous chars) → ~2.8 trillion combos.
+// Combined with the DB unique constraint, collisions are effectively impossible.
 function generateConfirmation() {
-  return `NL-${Math.floor(10000 + Math.random() * 90000)}`;
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let tail = "";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < 8; i++) tail += alphabet[bytes[i] % alphabet.length];
+  return `NL-${tail}`;
+}
+
+function normalizePhoneE164(raw: string): string {
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) return cleaned;
+  return `+1${cleaned.replace(/^1/, "")}`;
 }
 
 function todayISO() {
