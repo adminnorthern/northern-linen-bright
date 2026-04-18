@@ -822,8 +822,14 @@ function AddOnRow({
       <input
         type="number"
         min={0}
-        value={value}
-        onChange={(e) => onChange(Math.max(0, parseInt(e.target.value || "0", 10)))}
+        value={value === 0 ? "" : value}
+        placeholder="0"
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (raw === "") return onChange(0);
+          const n = parseInt(raw, 10);
+          onChange(Number.isNaN(n) ? 0 : Math.max(0, n));
+        }}
         style={{
           background: "#FFFFFF",
           border: `1.5px solid ${SOFT}`,
