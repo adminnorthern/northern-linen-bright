@@ -352,17 +352,18 @@ function BookNowForm({
       return;
     }
 
-    // Finalize: server re-verifies the hold and saves the booking
-    const confirmation_number = generateConfirmation();
+    // Finalize: server re-verifies the hold and saves the booking.
+    // Use the SAME confirmation_number that seeded the Stripe idempotency key
+    // so finalize is tied to the original PaymentIntent.
     const finalize = await finalizeBooking({
       data: {
         payment_intent_id: paymentIntentId,
         hold_amount: holdAmount,
         booking: {
-          confirmation_number,
+          confirmation_number: confirmationNumber,
           customer_name: data.customer_name.trim(),
-          email: data.email.trim(),
-          phone: data.phone.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: normalizePhoneE164(data.phone.trim()),
           street_address: data.street_address.trim(),
           city: data.city.trim(),
           state: data.state,
