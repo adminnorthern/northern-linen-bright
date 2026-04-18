@@ -264,6 +264,7 @@ function BookNowForm({
   setData: React.Dispatch<React.SetStateAction<FormData>>;
   holdAmount: number;
   paymentIntentId: string;
+  confirmationNumber: string;
 }) {
   const navigate = useNavigate();
   const stripe = useStripe();
