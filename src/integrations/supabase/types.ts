@@ -116,6 +116,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          attempts: number
+          key: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          key: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          key?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       supplies: {
         Row: {
           current_stock: number

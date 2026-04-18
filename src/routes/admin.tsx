@@ -1,6 +1,7 @@
-import { createFileRoute, Outlet, Link, useNavigate, useLocation, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -34,6 +35,32 @@ function AdminLayout() {
       navigate({ to: "/admin/login" });
     }
   }, [auth.loading, auth.isAuthenticated, onLoginPage, navigate]);
+
+  // Auto-refresh the admin session every 30 minutes so a long working session
+  // doesn't expire silently mid-task. Also redirect on sign-out / lost token.
+  useEffect(() => {
+    if (onLoginPage) return;
+
+    const interval = setInterval(async () => {
+      const { error } = await supabase.auth.refreshSession();
+      if (error) {
+        navigate({ to: "/admin/login" });
+      }
+    }, 30 * 60 * 1000);
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        navigate({ to: "/admin/login" });
+      } else if (event === "TOKEN_REFRESHED" && !session) {
+        navigate({ to: "/admin/login" });
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.subscription.unsubscribe();
+    };
+  }, [onLoginPage, navigate]);
 
   if (onLoginPage) {
     return (

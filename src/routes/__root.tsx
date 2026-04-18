@@ -2,8 +2,12 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation } from
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AuthProvider } from "@/lib/auth";
+import { checkEnvVars } from "@/lib/env-check";
 
 import appCss from "../styles.css?url";
+
+// One-time startup validation. No-op in the browser.
+checkEnvVars();
 
 function NotFoundComponent() {
   return (

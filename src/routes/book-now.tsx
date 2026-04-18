@@ -66,8 +66,21 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 type Errors = Partial<Record<keyof FormData, string>> & { card?: string; submit?: string };
 
+// 8-char alphanumeric tail (uppercase, no ambiguous chars) → ~2.8 trillion combos.
+// Combined with the DB unique constraint, collisions are effectively impossible.
 function generateConfirmation() {
-  return `NL-${Math.floor(10000 + Math.random() * 90000)}`;
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let tail = "";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < 8; i++) tail += alphabet[bytes[i] % alphabet.length];
+  return `NL-${tail}`;
+}
+
+function normalizePhoneE164(raw: string): string {
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) return cleaned;
+  return `+1${cleaned.replace(/^1/, "")}`;
 }
 
 function todayISO() {
@@ -96,6 +109,11 @@ function BookNowPage() {
   const [stripePromise, setStripePromise] = useState<Promise<StripeJs | null> | null>(null);
   const [intent, setIntent] = useState<{ clientSecret: string; paymentIntentId: string } | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+
+  // Generate the confirmation number ONCE per page load. It doubles as the
+  // Stripe idempotency key so a double-clicked submit returns the same intent
+  // rather than creating a duplicate hold.
+  const confirmationNumberRef = useRef<string>(generateConfirmation());
 
   // Centralized form state lives here so the intent can be created with the
   // initial estimated amount (Regular = $62.50) before mounting Elements.
@@ -128,6 +146,7 @@ function BookNowPage() {
         email: "pending@northernlinen.com",
         customer_name: "Pending",
         size_selected: data.size_selected,
+        idempotency_key: confirmationNumberRef.current,
       },
     }).then((res) => {
       if (cancelled) return;
@@ -228,6 +247,7 @@ function BookNowPage() {
         setData={setData}
         holdAmount={holdAmount}
         paymentIntentId={intent.paymentIntentId}
+        confirmationNumber={confirmationNumberRef.current}
       />
     </Elements>
   );
@@ -238,11 +258,13 @@ function BookNowForm({
   setData,
   holdAmount,
   paymentIntentId,
+  confirmationNumber,
 }: {
   data: FormData;
   setData: React.Dispatch<React.SetStateAction<FormData>>;
   holdAmount: number;
   paymentIntentId: string;
+  confirmationNumber: string;
 }) {
   const navigate = useNavigate();
   const stripe = useStripe();
@@ -330,17 +352,18 @@ function BookNowForm({
       return;
     }
 
-    // Finalize: server re-verifies the hold and saves the booking
-    const confirmation_number = generateConfirmation();
+    // Finalize: server re-verifies the hold and saves the booking.
+    // Use the SAME confirmation_number that seeded the Stripe idempotency key
+    // so finalize is tied to the original PaymentIntent.
     const finalize = await finalizeBooking({
       data: {
         payment_intent_id: paymentIntentId,
         hold_amount: holdAmount,
         booking: {
-          confirmation_number,
+          confirmation_number: confirmationNumber,
           customer_name: data.customer_name.trim(),
-          email: data.email.trim(),
-          phone: data.phone.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: normalizePhoneE164(data.phone.trim()),
           street_address: data.street_address.trim(),
           city: data.city.trim(),
           state: data.state,

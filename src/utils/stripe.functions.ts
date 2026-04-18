@@ -1,12 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit.server";
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
   return new Stripe(key, { apiVersion: "2023-10-16" as never });
+}
+
+const STATEMENT_DESCRIPTOR_SUFFIX = "NORTHERN LINEN"; // 14 chars, ≤ 22
+
+function normalizePhoneE164(raw: string): string {
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) return cleaned;
+  // Strip a leading "1" if present, then prefix +1 (US default).
+  return `+1${cleaned.replace(/^1/, "")}`;
 }
 
 /**
@@ -26,6 +37,7 @@ const createIntentSchema = z.object({
   email: z.string().email().max(255),
   customer_name: z.string().min(1).max(200),
   size_selected: z.enum(["Regular", "Big", "Jumbo"]),
+  idempotency_key: z.string().min(10).max(100),
 });
 
 /**
@@ -37,23 +49,44 @@ export const createBookingPaymentIntent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => createIntentSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      // Rate limit: 3 booking attempts per IP per hour.
+      const ip = getClientIp(new Headers(getRequestHeaders() as HeadersInit));
+      const rl = await checkRateLimit({
+        scope: "create_intent",
+        ip,
+        limit: 3,
+        windowMs: 60 * 60 * 1000,
+      });
+      if (!rl.allowed) {
+        return {
+          error: "Too many booking attempts. Please try again later.",
+          client_secret: null,
+          payment_intent_id: null,
+        };
+      }
+
       const stripe = getStripe();
-      const intent = await stripe.paymentIntents.create({
-        amount: data.amount_cents,
-        currency: "usd",
-        capture_method: "manual",
-        automatic_payment_methods: { enabled: true },
-        receipt_email: data.email,
-        description: `Northern Linen ${data.size_selected} pickup hold`,
-        metadata: {
-          customer_name: data.customer_name,
-          size_selected: data.size_selected,
-          source: "booking_form",
-        },
-        payment_method_options: {
-          card: { request_overcapture: "if_available" },
-        },
-      } as Stripe.PaymentIntentCreateParams);
+      const intent = await stripe.paymentIntents.create(
+        {
+          amount: data.amount_cents,
+          currency: "usd",
+          capture_method: "manual",
+          automatic_payment_methods: { enabled: true },
+          receipt_email: data.email,
+          description: `Northern Linen ${data.size_selected} pickup hold`,
+          statement_descriptor_suffix: STATEMENT_DESCRIPTOR_SUFFIX,
+          metadata: {
+            customer_name: data.customer_name,
+            size_selected: data.size_selected,
+            source: "booking_form",
+            confirmation_number: data.idempotency_key,
+          },
+          payment_method_options: {
+            card: { request_overcapture: "if_available" },
+          },
+        } as Stripe.PaymentIntentCreateParams,
+        { idempotencyKey: data.idempotency_key }
+      );
       if (!intent.client_secret) {
         return { error: "Stripe did not return a client secret", client_secret: null, payment_intent_id: null };
       }
@@ -84,6 +117,7 @@ export const updateBookingPaymentIntent = createServerFn({ method: "POST" })
       const stripe = getStripe();
       await stripe.paymentIntents.update(data.payment_intent_id, {
         amount: data.amount_cents,
+        statement_descriptor_suffix: STATEMENT_DESCRIPTOR_SUFFIX,
       });
       return { error: null as string | null };
     } catch (e) {
@@ -131,6 +165,18 @@ export const finalizeBooking = createServerFn({ method: "POST" })
         };
       }
 
+      // Normalize all customer-entered text before persisting.
+      const b = data.booking;
+      const normalized = {
+        ...b,
+        customer_name: b.customer_name.trim(),
+        email: b.email.trim().toLowerCase(),
+        phone: normalizePhoneE164(b.phone.trim()),
+        street_address: b.street_address.trim(),
+        city: b.city.trim(),
+        zip: b.zip.trim(),
+      };
+
       const authExpiry = new Date();
       authExpiry.setDate(authExpiry.getDate() + 7);
 
@@ -141,9 +187,8 @@ export const finalizeBooking = createServerFn({ method: "POST" })
         const token = process.env.TWILIO_AUTH_TOKEN;
         const from = process.env.TWILIO_PHONE_NUMBER;
         if (sid && token && from) {
-          const cleaned = data.booking.phone.replace(/[^\d+]/g, "");
-          const e164 = cleaned.startsWith("+") ? cleaned : `+1${cleaned.replace(/^1/, "")}`;
-          const body = `Hi ${data.booking.customer_name} — your Northern Linen pickup is confirmed for ${data.booking.pickup_date} at ${data.booking.pickup_time}. Confirmation: ${data.booking.confirmation_number}. We will arrive between 7 and 9am. Please do not reply to this number. Questions? Visit northernlinen.com`;
+          const e164 = normalized.phone;
+          const body = `Hi ${normalized.customer_name} — your Northern Linen pickup is confirmed for ${normalized.pickup_date} at ${normalized.pickup_time}. Confirmation: ${normalized.confirmation_number}. We will arrive between 7 and 9am. Please do not reply to this number. Questions? Visit northernlinen.com`;
           const auth = btoa(`${sid}:${token}`);
           const sendOnce = () =>
             fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
@@ -162,7 +207,7 @@ export const finalizeBooking = createServerFn({ method: "POST" })
       }
 
       const { error } = await supabaseAdmin.from("bookings").insert({
-        ...data.booking,
+        ...normalized,
         stripe_payment_intent_id: data.payment_intent_id,
         hold_amount: data.hold_amount,
         auth_expiry_date: authExpiry.toISOString(),
@@ -173,7 +218,7 @@ export const finalizeBooking = createServerFn({ method: "POST" })
         console.error("finalizeBooking insert failed:", error);
         return { error: "Failed to save booking", confirmation_number: null };
       }
-      return { error: null as string | null, confirmation_number: data.booking.confirmation_number };
+      return { error: null as string | null, confirmation_number: normalized.confirmation_number };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error finalizing booking";
       console.error("finalizeBooking failed:", msg);
