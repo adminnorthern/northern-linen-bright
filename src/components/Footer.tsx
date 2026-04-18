@@ -35,8 +35,8 @@ export function Footer() {
 
           {/* Column 3 */}
           <div className="text-center md:text-left">
-            <p className="text-[16px] font-semibold text-[#1B3A4B]">Contact</p>
-            <div className="mt-3 flex flex-col gap-1 text-[14px] text-[#1B3A4B] leading-8">
+            <p className="text-[16px] font-semibold text-secondary">Contact</p>
+            <div className="mt-3 flex flex-col gap-1 text-[14px] text-secondary leading-8">
               <p>info@northernlinen.com</p>
               <p>Service area: South Loop Bloomington MN</p>
               <p>Pickup hours: Monday through Saturday 7am to 9am</p>
