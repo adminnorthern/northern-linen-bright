@@ -110,6 +110,11 @@ function BookNowPage() {
   const [intent, setIntent] = useState<{ clientSecret: string; paymentIntentId: string } | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
 
+  // Generate the confirmation number ONCE per page load. It doubles as the
+  // Stripe idempotency key so a double-clicked submit returns the same intent
+  // rather than creating a duplicate hold.
+  const confirmationNumberRef = useRef<string>(generateConfirmation());
+
   // Centralized form state lives here so the intent can be created with the
   // initial estimated amount (Regular = $62.50) before mounting Elements.
   const [data, setData] = useState<FormData>(DEFAULT_DATA);
@@ -141,6 +146,7 @@ function BookNowPage() {
         email: "pending@northernlinen.com",
         customer_name: "Pending",
         size_selected: data.size_selected,
+        idempotency_key: confirmationNumberRef.current,
       },
     }).then((res) => {
       if (cancelled) return;
