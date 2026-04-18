@@ -38,7 +38,7 @@ export function Header() {
           ))}
           <Link
             to="/book-now"
-            className="rounded-lg bg-primary px-5 py-2.5 text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-[oklch(0.58_0.07_220)]"
+            className="rounded-lg bg-primary px-5 py-2.5 text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-deep"
           >
             Book Now
           </Link>
@@ -72,7 +72,7 @@ export function Header() {
             ))}
             <Link
               to="/book-now"
-              className="rounded-lg bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-[oklch(0.58_0.07_220)]"
+              className="rounded-lg bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-deep"
               onClick={() => setMobileOpen(false)}
             >
               Book Now

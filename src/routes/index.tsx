@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-delivery.jpg";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Northern Linen — Premium Laundry Pickup & Delivery in Bloomington MN" },
+      { name: "description", content: "Free pickup and delivery laundry service in South Loop Bloomington MN. $2.50/lb wash & fold, next-day delivery, no hidden fees." },
+      { property: "og:title", content: "Northern Linen — Premium Laundry Pickup & Delivery" },
+      { property: "og:description", content: "Free pickup and next-day delivery in South Loop Bloomington MN." },
+    ],
+  }),
   component: HomePage,
 });
 
