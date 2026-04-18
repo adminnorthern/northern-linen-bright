@@ -247,6 +247,7 @@ function BookNowPage() {
         setData={setData}
         holdAmount={holdAmount}
         paymentIntentId={intent.paymentIntentId}
+        confirmationNumber={confirmationNumberRef.current}
       />
     </Elements>
   );
@@ -257,6 +258,7 @@ function BookNowForm({
   setData,
   holdAmount,
   paymentIntentId,
+  confirmationNumber,
 }: {
   data: FormData;
   setData: React.Dispatch<React.SetStateAction<FormData>>;
